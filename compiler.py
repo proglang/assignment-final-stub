@@ -1,26 +1,13 @@
-import ast
 from ast import *
+from register_allocation import build_interference, color_graph
+from register_allocation import color_to_register, all_argument_passing_registers, callee_saved_registers
 from utils import *
 from x86_ast import *
-import os
-from typing import Set
 from dataclasses import dataclass, field
-import platform
-from register_allocation import color_graph, build_interference, color_to_register, callee_saved_registers, uncover_live_blocks, argument_passing_registers
 from pprint import pprint
 
 Binding = tuple[Name, expr]
 Temporaries = list[Binding]
-
-get_fresh_tmp = lambda: generate_name("tmp")
-all_argument_passing_registers = [Reg("rdi"), Reg("rsi"), Reg("rdx"), Reg("rcx"), Reg("r8"), Reg("r9")]
-
-# Tmps and blocks have the same numbering
-# -> not an issue, but unnecessary
-def create_block(stmts, basic_blocks):
-    label = label_name(generate_name('block'))
-    basic_blocks[label] = stmts
-    return Goto(label)
 
 @dataclass
 class Compiler:
@@ -258,7 +245,7 @@ class Compiler:
                 beginbody: list[stmt] = []
                 tmps = []
                 for exp in es:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('expose')
                     tmps.append(fresh_tmp)
                     beginbody.append(Assign([Name(fresh_tmp)], self.expose_exp(exp)))
                 bytesreq = (len(tmps) + 1) * 8
@@ -268,7 +255,7 @@ class Compiler:
                                      [GlobalValue("fromspace_end")]),
                                  [Expr(Constant(0))],
                                  [Collect(bytesreq)]))
-                fresh_tmp = get_fresh_tmp()
+                fresh_tmp = generate_name('expose')
                 fresh_tmp_name = Name(fresh_tmp)
                 beginbody.append(Assign([fresh_tmp_name], Allocate(len(tmps), e.has_type)))
                 for i in range(len(tmps)):
@@ -324,38 +311,38 @@ class Compiler:
     # Remove Complex Operands
     ############################################################################
 
-    def tmps_to_stmts(self, tmps: Temporaries) -> list[stmt]:
-        return [Assign([tmp[0]], tmp[1]) for tmp in tmps]
-
     def rco_exp(self, e: expr, need_atomic: bool) -> tuple[expr, Temporaries]:
         match e:
             # L_fun
             case FunRef(var, arity):
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), [(Name(fresh_tmp), e)])
                 return e, []
             case Call(exp, args):
                 atm1, tmps1 = self.rco_exp(exp, True)
                 atm_args = []
                 atm_tmps = []
-                for exp in args:
-                    atm, tmps = self.rco_exp(exp, True)
+                for arg_i in args:
+                    atm, tmps = self.rco_exp(arg_i, True)
                     atm_args.append(atm)
                     atm_tmps += tmps
+                ret_exp = Call(atm1, atm_args)
+                ret_tmps = tmps1 + atm_tmps
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
-                    return (Name(fresh_tmp), tmps1 + atm_tmps + [(Name(fresh_tmp), Call(atm1, atm_args))])
-                return (Call(atm1, atm_args), tmps1 + atm_tmps)
+                    fresh_tmp = generate_name('atom')
+                    ret_tmps.append((Name(fresh_tmp), ret_exp))
+                    ret_exp = Name(fresh_tmp)
+                return (ret_exp, ret_tmps)
             # L_tup
             case Allocate(n, typ):
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), [(Name(fresh_tmp), e)])
                 return (e, [])
             case GlobalValue(ident):
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), [(Name(fresh_tmp), e)])
                 return (e, [])
             case Begin(body, exp):
@@ -363,20 +350,20 @@ class Compiler:
                 for s in body:
                     new_body += self.rco_stmt(s)
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), [(Name(fresh_tmp), Begin(new_body, exp))])
                 return (Begin(new_body, exp), [])
             case Call(Name('len'), [exp]):
                 atm1, tmps1 = self.rco_exp(exp, True)
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), tmps1 + [(Name(fresh_tmp), Call(Name('len'), [atm1]))])
                 return (Call(Name('len'), [atm1]), tmps1)
             case Subscript(exp1, exp2, Load()):
                 atm1, tmps1 = self.rco_exp(exp1, True)
                 atm2, tmps2 = self.rco_exp(exp2, True)
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), tmps1 + tmps2 + [(Name(fresh_tmp), Subscript(atm1, atm2, Load()))])
                 return (Subscript(atm1, atm2, Load()), tmps1 + tmps2)
             # L_if
@@ -384,19 +371,17 @@ class Compiler:
                 atm1, tmps1 = self.rco_exp(exp1, False)
                 atm2, tmps2 = self.rco_exp(exp2, False)
                 atm3, tmps3 = self.rco_exp(exp3, False)
-                for (name, exp) in tmps2[::-1]:
-                    atm2 = Let(name, exp, atm2)
-                for (name, exp) in tmps3[::-1]:
-                    atm3 = Let(name, exp, atm3)
+                exp_then = make_begin(tmps2, atm2)
+                exp_else = make_begin(tmps3, atm3)
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
-                    return (Name(fresh_tmp), tmps1 + [(Name(fresh_tmp), IfExp(atm1, atm2, atm3))])
-                return (IfExp(atm1, atm2, atm3), tmps1)
+                    fresh_tmp = generate_name('atom')
+                    return (Name(fresh_tmp), tmps1 + [(Name(fresh_tmp), IfExp(atm1, exp_then, exp_else))])
+                return (IfExp(atm1, exp_then, exp_else), tmps1)
             case Compare(left, [cmp], [right]):
                 latm, ltmps = self.rco_exp(left, True)
                 ratm, rtmps = self.rco_exp(right, True)
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), ltmps + rtmps + [(Name(fresh_tmp), Compare(latm, [cmp], [ratm]))])
                 return (Compare(latm, [cmp], [ratm]), ltmps + rtmps)
             # L_var
@@ -406,20 +391,20 @@ class Compiler:
                 return (e, [])
             case Call(Name('input_int'), []):
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), [(Name(fresh_tmp), e)])
                 return (e, [])
             case UnaryOp(op, e1):
                 atm, tmps = self.rco_exp(e1, True)
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), tmps + [(Name(fresh_tmp), UnaryOp(op, atm))])
                 return (UnaryOp(op, atm), tmps)
             case BinOp(e1, op, e2):
                 atm1, tmps1 = self.rco_exp(e1, True)
                 atm2, tmps2 = self.rco_exp(e2, True)
                 if need_atomic:
-                    fresh_tmp = get_fresh_tmp()
+                    fresh_tmp = generate_name('atom')
                     return (Name(fresh_tmp), tmps1 + tmps2 + [(Name(fresh_tmp), BinOp(atm1, op, atm2))])
                 return (BinOp(atm1, op, atm2), tmps1 + tmps2)
             case _:
@@ -432,14 +417,14 @@ class Compiler:
             # L_fun
             case Return(e):
                 atm, tmps = self.rco_exp(e, False)
-                return self.tmps_to_stmts(tmps) + [Return(atm)]
+                return make_assigns(tmps) + [Return(atm)]
             # L_tup
             case Assign([Subscript(exp1, exp2, Store())], exp3):
                 atm1, tmps1 = self.rco_exp(exp1, True)
                 atm2, tmps2 = self.rco_exp(exp2, True)
                 atm3, tmps3 = self.rco_exp(exp3, True)
-                return (self.tmps_to_stmts(tmps1) + self.tmps_to_stmts(tmps2)
-                        + self.tmps_to_stmts(tmps3) + [Assign([Subscript(atm1, atm2, Store())], atm3)])
+                return (make_assigns(tmps1) + make_assigns(tmps2)
+                        + make_assigns(tmps3) + [Assign([Subscript(atm1, atm2, Store())], atm3)])
             case Collect(n):
                 return [s]
             # L_if
@@ -451,17 +436,17 @@ class Compiler:
                 astmts2 = []
                 for s in stmts2:
                     astmts2 += self.rco_stmt(s)
-                return self.tmps_to_stmts(tmps) + [If(atm, astmts1, astmts2)]
+                return make_assigns(tmps) + [If(atm, astmts1, astmts2)]
             # L_var
             case Expr(Call(Name('print'), [e])):
                 atm, tmps = self.rco_exp(e, True)
-                return self.tmps_to_stmts(tmps) + [Expr(Call(Name('print'), [atm]))]
+                return make_assigns(tmps) + [Expr(Call(Name('print'), [atm]))]
             case Expr(e):
                 atm, tmps = self.rco_exp(e, False)
-                return self.tmps_to_stmts(tmps) + [Expr(atm)]
+                return make_assigns(tmps) + [Expr(atm)]
             case Assign([Name(var)], e):
                 atm, tmps = self.rco_exp(e, False)
-                return self.tmps_to_stmts(tmps) + [Assign([Name(var)], atm)]
+                return make_assigns(tmps) + [Assign([Name(var)], atm)]
             case _:
                 pprint(s)
                 raise Exception("Missed statement in rco_stmt")
@@ -501,9 +486,9 @@ class Compiler:
                 return self.explicate_pred(test, expl_body, expl_orelse, basic_blocks)
             case Call(func, args):
                 return [Expr(e)] + cont
-            case Let(var, rhs, body):
-                expl_body = self.explicate_effect(body, cont, basic_blocks)
-                return self.explicate_assign(rhs, var, expl_body, basic_blocks)
+#            case Let(var, rhs, body):
+#                expl_body = self.explicate_effect(body, cont, basic_blocks)
+#                return self.explicate_assign(rhs, var, expl_body, basic_blocks)
             case _:
                 # atm's don't have side-effects!
                 return cont
@@ -526,8 +511,8 @@ class Compiler:
                                            self.explicate_assign(body, lhs, [goto_cnt], basic_blocks),
                                            self.explicate_assign(orelse, lhs, [goto_cnt], basic_blocks),
                                            basic_blocks)
-            case Let(var, rhs, body):
-                return self.explicate_assign(rhs, var, self.explicate_assign(body, lhs, cont, basic_blocks), basic_blocks)
+#            case Let(var, rhs, body):
+#                return self.explicate_assign(rhs, var, self.explicate_assign(body, lhs, cont, basic_blocks), basic_blocks)
             case _:
                 return [Assign([lhs], rhs)] + cont
 
@@ -541,7 +526,7 @@ class Compiler:
                 return self.explicate_assign(cnd, Name(result), pred, basic_blocks)
             # L_tup
             case Subscript(tup, index, Load()):
-                fresh_tmp = get_fresh_tmp()
+                fresh_tmp = generate_name('expl')
                 return self.explicate_assign(cnd, Name(fresh_tmp),
                                              self.explicate_pred(Name(fresh_tmp),
                                                                  thn,
@@ -572,9 +557,9 @@ class Compiler:
                 ep_body = self.explicate_pred(body, [goto_thn], [goto_els], basic_blocks)
                 ep_orelse = self.explicate_pred(orelse, [goto_thn], [goto_els], basic_blocks)
                 return self.explicate_pred(test, ep_body, ep_orelse, basic_blocks)
-            case Let(var, rhs, body):
-                new_body = self.explicate_pred(body, thn, els, basic_blocks)
-                return self.explicate_assign(rhs, var, new_body, basic_blocks)
+#            case Let(var, rhs, body):
+#                new_body = self.explicate_pred(body, thn, els, basic_blocks)
+#                return self.explicate_assign(rhs, var, new_body, basic_blocks)
             case _:
                 return [If(Compare(cnd, [Eq()], [Constant(False)]),
                            [create_block(els, basic_blocks)],
@@ -591,13 +576,13 @@ class Compiler:
                 expl_body = self.explicate_tail(body, basic_blocks)
                 expl_orelse = self.explicate_tail(orelse, basic_blocks)
                 return self.explicate_pred(test, expl_body, expl_orelse, basic_blocks)
-            case Let(var, rhs, body):
-                new_body = self.explicate_tail(body, basic_blocks)
-                return self.explicate_assign(rhs, var, new_body, basic_blocks)
+#            case Let(var, rhs, body):
+#                new_body = self.explicate_tail(body, basic_blocks)
+#                return self.explicate_assign(rhs, var, new_body, basic_blocks)
             case Call(var, args):
                 return [TailCall(var, args)]
             case _:
-                tmp_var = Name(get_fresh_tmp())
+                tmp_var = Name(generate_name('expl'))
                 return self.explicate_assign(e, tmp_var, [Return(tmp_var)], basic_blocks)
 
     def explicate_stmt(self, s, cont, basic_blocks) -> list[stmt]:

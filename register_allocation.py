@@ -8,7 +8,9 @@ from utils import TupleType
 pprint = pprint.PrettyPrinter(indent=4).pprint
 caller_saved_registers : set[location] = set([Reg("rax"), Reg("rcx"), Reg("rdx"), Reg("rsi"), Reg("rdi"), Reg("r8"), Reg("r9"), Reg("r10"), Reg("r11")])
 callee_saved_registers : set[location] = set([Reg("rsp"), Reg("rbp"), Reg("rbx"), Reg("r12"), Reg("r13"), Reg("r14"), Reg("r15")])
-argument_passing_registers : Callable[[int], set[location]] = lambda arity: set([Reg("rdi"), Reg("rsi"), Reg("rdx"), Reg("rcx"), Reg("r8"), Reg("r9")][:arity])
+all_argument_passing_registers : list[location] = [Reg("rdi"), Reg("rsi"), Reg("rdx"), Reg("rcx"), Reg("r8"), Reg("r9")]
+def argument_passing_registers(arity: int) -> set[location]:
+    return set(all_argument_passing_registers[:arity])
 registers_for_coloring = [Reg("rbp"), Reg("rsp"), Reg("rax"), Reg("rcx"), Reg("rdx"), Reg("rsi"), Reg("rdi"), Reg("r8"), Reg("r9"), Reg("r10"), Reg("r11"),
                           Reg("rbx"), Reg("r12"), Reg("r13"), Reg("r14"), Reg("r15")]
 register_to_color = { registers_for_coloring[i]: i - 3 for i in range(0, len(registers_for_coloring)) }

@@ -181,7 +181,7 @@ class UndirectedAdjList(DirectedAdjList):
 # Topological Sort
 ################################################################################
 
-def topological_sort(G: DirectedAdjList) -> list:
+def topological_sort(G: DirectedAdjList) -> DirectedAdjList:
     in_degree = {u: 0 for u in G.vertices()}
     for e in G.edges():
         in_degree[e.target] += 1
