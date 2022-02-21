@@ -1,0 +1,7 @@
+*.pyc
+*.o
+*pycache*
+.pytest_cache
+.vscode
+requirements.installed
+
