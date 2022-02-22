@@ -1,5 +1,7 @@
 *.pyc
 *.o
+*.s
+*.out
 *pycache*
 .pytest_cache
 .vscode
