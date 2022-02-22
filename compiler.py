@@ -1,4 +1,5 @@
 from ast import *
+from cProfile import label
 from register_allocation import build_interference, color_graph
 from register_allocation import color_to_register, all_argument_passing_registers, callee_saved_registers
 from utils import *
@@ -653,6 +654,11 @@ class Compiler:
 
     def select_stmt(self, s: stmt, name: str) -> list[instr]:
         match s:
+            case Expr(Call(Name("print"), [atm])):
+                arg = self.select_arg(atm)
+                return [Instr("movq", [arg, Reg("rdi")]), Callq(label_name("print_int"), 1)]
+            case Expr(Call(Name("input_int"), [])):
+                return [Callq(label_name("read_int"), 0)]
             # L_fun
             case Assign([Name(var)], FunRef(fun, arity)):
                 return [Instr("leaq", [Global(fun), Variable(var)])]
@@ -671,7 +677,7 @@ class Compiler:
                 return output
             case Return(atm):
                 arg = self.select_arg(atm)
-                return [Instr("movq", [arg, Reg("rax")]), Jump(name + "conclusion")]
+                return [Instr("movq", [arg, Reg("rax")]), Jump(label_name(name + "conclusion"))]
             case Expr(Call(Name(func), args)) if func != "input_int" and func != "len" and func != "print":
                 output = []
                 for i in range(len(args)):
@@ -709,7 +715,7 @@ class Compiler:
                         Instr("movq", [Immediate(tag), Deref("r11", 0)]), Instr("movq", [Reg("r11"), varobj])]
             case Collect(n):
                 return [Instr("movq", [Reg("r15"), Reg("rdi")]), Instr("movq", [Immediate(n), Reg("rsi")]),
-                        Callq("collect", 2)]
+                        Callq(label_name("collect"), 2)]
             case Assign([Name(var)], Call(Name("len"), [atm])):
                 arg = self.select_arg(atm)
                 return [Instr("movq", [arg, Reg("rax")]),
@@ -721,25 +727,14 @@ class Compiler:
                 return [Instr("movq", [Global(gvar), Variable(var)])]
             # L_if
             case Goto(label):
-                return [Jump(label)]
+                return [Jump(label_name(label))]
             case If(Compare(latm, [cmp], [ratm]), [Goto(label1)], [Goto(label2)]):
                 larg = self.select_arg(latm)
                 rarg = self.select_arg(ratm)
                 output: list[instr] = [Instr("cmpq", [rarg, larg])]
-                match cmp:
-                    case Eq():
-                        output.append(JumpIf("e", label1))
-                    case NotEq():
-                        output.append(JumpIf("ne", label1))
-                    case Lt():
-                        output.append(JumpIf("l", label1))
-                    case LtE():
-                        output.append(JumpIf("le", label1))
-                    case Gt():
-                        output.append(JumpIf("g", label1))
-                    case GtE():
-                        output.append(JumpIf("ge", label1))
-                output.append(Jump(label2))
+                ccode = cmp_to_code(cmp)
+                output.append(JumpIf(ccode, label_name(label1)))
+                output.append(Jump(label_name(label2)))
                 return output
             case Assign([Name(var)], UnaryOp(Not(), atm)):
                 arg = self.select_arg(atm)
@@ -793,19 +788,17 @@ class Compiler:
             case Assign([Name(var)], atm):
                 arg = self.select_arg(atm)
                 return [Instr("movq", [arg, Variable(var)])]
-            case Expr(Call(Name("print"), [atm])):
-                arg = self.select_arg(atm)
-                return [Instr("movq", [arg, Reg("rdi")]), Callq("print_int", 1)]
-            case Expr(Call(Name("input_int"), [])):
-                return [Callq(label_name("read_int"), 0)]
             case _:
                 Exception("Missing case in select_stmt")
 
     def select_def(self, df: FunctionDef) -> FunctionDef:
         match df:
             case FunctionDef(name, params, fbody, dl, returns, comment):
+                label_conclusion = label_name(name + 'conclusion')
+                label_start = label_name(name + 'start')
+                label_of_name = label_name(name)
                 output = dict()
-                output[name + "conclusion"] = [Instr("popq", [Reg("rbp")]), Instr("retq", [])] # will be filled later
+                output[label_conclusion] = [Instr("popq", [Reg("rbp")]), Instr("retq", [])] # will be filled later
                 for block in fbody:
                     new_block = []
                     for stm in fbody[block]:
@@ -814,20 +807,20 @@ class Compiler:
                 # Move parameters into local variables
                 for i in range(len(params)):
                     param_name = params[i][0]
-                    output[name + 'start'].insert(0, Instr("movq", [all_argument_passing_registers[i], Variable(param_name)]))
-                output[name] = [Instr("pushq", [Reg("rbp")]), Instr("movq", [Reg("rsp"), Reg("rbp")])]
+                    output[label_start].insert(0, Instr("movq", [all_argument_passing_registers[i], Variable(param_name)]))
+                output[label_of_name] = [Instr("pushq", [Reg("rbp")]), Instr("movq", [Reg("rsp"), Reg("rbp")])]
                 if name == "main":
                     # Temporary prologue for interp_x86, will be overwritten later
                     prologue = []
                     prologue.append(Instr("movq", [Immediate(16384), Reg("rdi")]))
                     prologue.append(Instr("movq", [Immediate(16384), Reg("rsi")]))
-                    prologue.append(Callq("initialize", 2))
-                    prologue.append(Instr("movq", [Global("rootstack_begin"), Reg("r15")]))
+                    prologue.append(Callq(label_name("initialize"), 2))
+                    prologue.append(Instr("movq", [Global(label_name("rootstack_begin")), Reg("r15")]))
                     prologue.append(Instr("movq", [Immediate(0), Deref("r15", 0)]))
-                    prologue.append(Jump(name + "start"))
-                    output[name] += prologue
+                    prologue.append(Jump(label_name(name + "start")))
+                    output[label_of_name] += prologue
                 else:
-                    output[name].append(Jump(name + "start"))
+                    output[label_of_name].append(Jump(label_name(name + "start")))
 
                 result = FunctionDef(name, [], output, dl, returns, comment)
                 result.var_types = df.var_types
@@ -1038,18 +1031,18 @@ class Compiler:
                 if name == "main":
                     prologue.append(Instr("movq", [Immediate(16384), Reg("rdi")]))
                     prologue.append(Instr("movq", [Immediate(16384), Reg("rsi")]))
-                    prologue.append(Callq("initialize", 2))
-                    prologue.append(Instr("movq", [Global("rootstack_begin"), Reg("r15")]))
+                    prologue.append(Callq(label_name("initialize"), 2))
+                    prologue.append(Instr("movq", [Global(label_name("rootstack_begin")), Reg("r15")]))
                 for i in range(0, df.root_stack_space // 8):
                     prologue.append(Instr("movq", [Immediate(0), Deref("r15", 0)]))
                     prologue.append(Instr("addq", [Immediate(8), Reg("r15")]))
-                fbody[name] = prologue + [Jump(name + "start")]
+                fbody[label_name(name)] = prologue + [Jump(label_name(name + "start"))]
                 epilogue: list[instr] = [Instr("popq", [Reg("rbp")]), Instr("retq", [])]
                 for reg in df.used_callee:
                     epilogue.insert(0, Instr("popq", [reg]))
                 if stack_space_mod16 > 0:
                     epilogue.insert(0, Instr("addq", [Immediate(stack_space_mod16), Reg("rsp")]))
-                fbody[name + "conclusion"] = epilogue
+                fbody[label_name(name + "conclusion")] = epilogue
                 return fbody
 
     def prelude_and_conclusion(self, p: X86ProgramDefs) -> X86Program:

@@ -268,9 +268,9 @@ FunctionDef.__repr__ = repr_FunctionDef
 
 def str_Lambda(self):
     if isinstance(self.args, ast.arguments):
-        params = ', '.join([a.arg for a in self.args.args])
+        params = ', '.join(a.arg for a in self.args.args)
     else:
-        params = ', '.join([x for x in self.args])
+        params = ', '.join(self.args)
     body = str(self.body)
     return '(lambda ' + params + ': ' + body + ')'
 def repr_Lambda(self):
@@ -293,6 +293,20 @@ Name.__eq__ = eq_Name
 def hash_Name(self):
     return hash(self.id)
 Name.__hash__ = hash_Name
+
+################################################################################
+# map compare operators to their encoding
+# could be done as a dictionary, but there is neither __hash__ nor __eq__
+################################################################################
+
+def cmp_to_code(cmp) -> str:
+    match cmp:
+        case Eq(): return 'e'
+        case NotEq(): return 'ne'
+        case Lt(): return 'l'
+        case LtE(): return 'le'
+        case Gt(): return 'g'
+        case GtE(): return 'ge'
 
 ################################################################################
 # Generating unique names
@@ -527,6 +541,16 @@ class AnyType(Type):
 # Base class of runtime values
 class Value:
     pass
+
+block_id = 0
+
+def create_block(stmts: list[stmt], basic_blocks:dict[str,list[stmt]]) -> Goto:
+    'stuff statments into a new basic block; return a jump to it'
+    global block_id
+    label = label_name('block' + str(block_id))
+    block_id += 1
+    basic_blocks[label] = stmts
+    return Goto(label)
     
 ################################################################################
 # Miscellaneous Auxiliary Functions
@@ -727,7 +751,7 @@ def compile_and_test(
     trace(pseudo_x86)
     trace("")
     total_passes += 1
-    test_x86 = True
+    test_x86 = False # doesn't know about GC!
     if test_x86:
         successful_passes += test_pass(
             "select instructions", interp_x86, program_root, pseudo_x86, compiler_name
@@ -754,13 +778,13 @@ def compile_and_test(
         )
 
     trace('\n# prelude and conclusion\n')
-    program = compiler.prelude_and_conclusion(program)
-    trace(program)
+    final_program = compiler.prelude_and_conclusion(x86)
+    trace(final_program)
     trace("")
     
     x86_filename = program_root + ".s"
     with open(x86_filename, "w") as dest:
-        dest.write(str(program))
+        dest.write(str(final_program))
         
     total_passes += 1
         
@@ -771,7 +795,7 @@ def compile_and_test(
         stdout = sys.stdout
         sys.stdin = open(program_root + '.in', 'r')
         sys.stdout = open(program_root + '.out', 'w')
-        interp_x86(program)
+        interp_x86(final_program)
         sys.stdin = stdin
         sys.stdout = stdout
     else:
