@@ -547,9 +547,9 @@ block_id = 0
 def create_block(stmts: list[stmt], basic_blocks:dict[str,list[stmt]]) -> Goto:
     'stuff statments into a new basic block; return a jump to it'
     global block_id
-    label = label_name('block' + str(block_id))
+    label = 'block' + str(block_id)
     block_id += 1
-    basic_blocks[label] = stmts
+    basic_blocks[label_name(label)] = stmts
     return Goto(label)
     
 ################################################################################

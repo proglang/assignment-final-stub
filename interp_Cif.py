@@ -11,7 +11,7 @@ class InterpCif(InterpLif):
       case Return(value):
         return self.interp_exp(value, env)
       case Goto(label):
-        return self.interp_stmts(self.blocks[label], env)
+        return self.interp_stmts(self.blocks[label_name(label)], env)
       case _:
         return super().interp_stmts(ss, env)
     
