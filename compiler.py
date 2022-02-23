@@ -661,7 +661,7 @@ class Compiler:
                 return [Callq(label_name("read_int"), 0)]
             # L_fun
             case Assign([Name(var)], FunRef(fun, arity)):
-                return [Instr("leaq", [Global(fun), Variable(var)])]
+                return [Instr("leaq", [Global(label_name(fun)), Variable(var)])]
             case Assign([Name(var)], Call(Name(func), args)) if func != "input_int" and func != "len":
                 output = []
                 for i in range(len(args)):

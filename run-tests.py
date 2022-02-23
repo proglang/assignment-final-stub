@@ -24,4 +24,4 @@ run_tests("var", compiler, "var", type_check_Lfun.TypeCheckLfun().type_check, in
 run_tests("regalloc", compiler, "regalloc", type_check_Lfun.TypeCheckLfun().type_check, interp_Lfun.InterpLfun().interp, type_check_Cfun.TypeCheckCfun().type_check, interp_Cfun.InterpCfun().interp)
 run_tests("lif", compiler, "lif", type_check_Lfun.TypeCheckLfun().type_check, interp_Lfun.InterpLfun().interp, type_check_Cfun.TypeCheckCfun().type_check, interp_Cfun.InterpCfun().interp)
 run_tests("tuples", compiler, "tuples", type_check_Lfun.TypeCheckLfun().type_check, interp_Lfun.InterpLfun().interp, type_check_Cfun.TypeCheckCfun().type_check, interp_Cfun.InterpCfun().interp)
-#run_tests("fun", compiler, "fun", type_check_Lfun.TypeCheckLfun().type_check, interp_Lfun.InterpLfun().interp, type_check_Cfun.TypeCheckCfun().type_check, interp_Cfun.InterpCfun().interp)
+run_tests("fun", compiler, "fun", type_check_Lfun.TypeCheckLfun().type_check, interp_Lfun.InterpLfun().interp, type_check_Cfun.TypeCheckCfun().type_check, interp_Cfun.InterpCfun().interp)
