@@ -4,7 +4,7 @@ from sys import platform
 import ast
 from ast import *
 from dataclasses import dataclass
-from typing import List
+from typing import Callable
 from filecmp import cmp
 
 ################################################################################
@@ -579,12 +579,14 @@ def bool2int(b):
         return 1
     else:
         return 0
-    
-def label_name(n: str) -> str:
-    if platform == "darwin":
-        return '_' + n
-    else:
-        return n
+
+label_name: Callable[[str], str] = (lambda n: '_' + n) if platform == 'darwin' else (lambda n: n)
+
+# def label_name(n: str) -> str:
+#     if platform == "darwin":
+#         return '_' + n
+#     else:
+#         return n
     
 tracing = False
 
