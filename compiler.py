@@ -251,9 +251,9 @@ class Compiler:
                     beginbody.append(Assign([Name(fresh_tmp)], self.expose_exp(exp)))
                 bytesreq = (len(tmps) + 1) * 8
                 beginbody.append(If(Compare(
-                                     BinOp(GlobalValue("free_ptr"), Add(), Constant(bytesreq)),
+                                     BinOp(GlobalValue(label_name("free_ptr")), Add(), Constant(bytesreq)),
                                      [Lt()],
-                                     [GlobalValue("fromspace_end")]),
+                                     [GlobalValue(label_name("fromspace_end"))]),
                                  [Expr(Constant(0))],
                                  [Collect(bytesreq)]))
                 fresh_tmp = generate_name('expose')
@@ -711,7 +711,8 @@ class Compiler:
                         pointer_mask += 1 << i
                 tag = (lgth << 1) + (pointer_mask << 7) + 1
                 varobj = Variable(var)
-                return [Instr("movq", [Global("free_ptr"), Reg("r11")]), Instr("addq", [Immediate(8 * (lgth + 1)), Global("free_ptr")]),
+                return [Instr("movq", [Global(label_name("free_ptr")), Reg("r11")]),
+                        Instr("addq", [Immediate(8 * (lgth + 1)), Global(label_name("free_ptr"))]),
                         Instr("movq", [Immediate(tag), Deref("r11", 0)]), Instr("movq", [Reg("r11"), varobj])]
             case Collect(n):
                 return [Instr("movq", [Reg("r15"), Reg("rdi")]), Instr("movq", [Immediate(n), Reg("rsi")]),
