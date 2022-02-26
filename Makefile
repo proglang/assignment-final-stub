@@ -1,4 +1,4 @@
-.PHONY: all clean distclean
+.PHONY: all clean distclean examtests
 
 all: runtime.o requirements.installed
 
@@ -8,6 +8,13 @@ runtime.o: runtime.c runtime.h
 requirements.installed: requirements.txt
 	pip3 install -r requirements.txt
 	touch requirements.installed
+
+examtests:
+	cd tests/exam ; \
+	for f in *.py ; do \
+		bf=`basename $$f .py` ; \
+		sed -ne 's/#in=//w'$$bf.in -e 's/#golden=//w'$$bf.golden $$f ; \
+	done
 
 clean:
 	rm tests/*/*.s
