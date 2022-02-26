@@ -1,5 +1,6 @@
 from ast import *
 from cProfile import label
+from typing import Optional
 from register_allocation import build_interference, color_graph
 from register_allocation import color_to_register, all_argument_passing_registers, callee_saved_registers
 from utils import *
@@ -747,19 +748,8 @@ class Compiler:
                 larg = self.select_arg(latm)
                 rarg = self.select_arg(ratm)
                 output = [Instr("cmpq", [rarg, larg])]
-                match cmp:
-                    case Eq():
-                        output.append(Instr("sete", [ByteReg('al')]))
-                    case NotEq():
-                        output.append(Instr("setne", [ByteReg('al')]))
-                    case Lt():
-                        output.append(Instr("setl", [ByteReg('al')]))
-                    case LtE():
-                        output.append(Instr("setle", [ByteReg('al')]))
-                    case Gt():
-                        output.append(Instr("setg", [ByteReg('al')]))
-                    case GtE():
-                        output.append(Instr("setge", [ByteReg('al')]))
+                ccode = cmp_to_code(cmp)
+                output.append(Instr(f"set{ccode}", [ByteReg('al')]))
                 output.append(Instr("movzbq", [ByteReg("al"), Variable(var)]))
                 return output
             # L_var
@@ -888,16 +878,14 @@ class Compiler:
     # Assign Homes
     ############################################################################
 
-    def assign_homes_arg(self, a: arg, home: dict[Variable, arg]) -> arg|None:
+    def assign_homes_arg(self, a: arg, home: dict[Variable, arg]) -> Optional[arg]:
         match a:
             case Variable(_):
-                if a in home:
-                    return home[a]
-                return None
+                return home.get(a, None)
             case _:
                 return a
 
-    def assign_homes_instr(self, i: instr, home: dict[Variable, arg]) -> instr|None:
+    def assign_homes_instr(self, i: instr, home: dict[Variable, arg]) -> Optional[instr]:
         match i:
             case Instr(istr, [arg1, arg2]):
                 assigned_arg1 = self.assign_homes_arg(arg1, home)
@@ -922,9 +910,8 @@ class Compiler:
         output = []
         for istr in ss:
             assigned_istr = self.assign_homes_instr(istr, home)
-            if assigned_istr is None:
-                continue
-            output.append(assigned_istr)
+            if assigned_istr is not None:
+                output.append(assigned_istr)
         return output
 
     def assign_homes_def(self, p: FunctionDef) -> FunctionDef:
@@ -1051,6 +1038,3 @@ class Compiler:
         for df in p.defs:
             output = output | self.prelude_and_conclusion_def(df)
         return X86Program(output)
-
-
-

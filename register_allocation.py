@@ -22,11 +22,11 @@ registers_excluded_colors = [register_to_color[i] for i in registers_excluded]
 def get_arg_locations(arg1 : arg) -> set[location]:
     match arg1:
         case Reg(_):
-            return set([arg1])
+            return {arg1}
         case Variable(_):
-            return set([arg1])
+            return {arg1}
         case ByteReg(_):
-            return set([arg1])
+            return {arg1}
         case _:
             return set()
 
@@ -46,7 +46,7 @@ def get_read_write_locations(istr : Instr) -> tuple[set[location], set[location]
             return (get_arg_locations(arg), set())
         case Instr("popq", [arg]):
             return (set(), get_arg_locations(arg))
-        case Instr(op, [arg]) if "set" in op:
+        case Instr(op, [arg]) if op.find("set") == 0:
             return (set(), get_arg_locations(arg))
         case Callq(l, i):
             return (argument_passing_registers(i), caller_saved_registers)
