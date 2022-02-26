@@ -469,15 +469,21 @@ class Bottom(Type):
 class TupleType(Type):
     types : list[Type]
     def __str__(self):
-        return 'tuple[' + ','.join([str(p) for p in self.types]) + ']'
+        return 'tuple[' + ','.join(map(str, self.types)) + ']'
 
 @dataclass(eq=True)
 class FunctionType:
     param_types : list[Type]
     ret_type : Type
     def __str__(self):
-        return 'Callable[[' + ','.join([str(p) for p in self.param_types])+']'\
+        return 'Callable[[' + ','.join(map(str, self.param_types))+']'\
             + ', ' + str(self.ret_type) + ']'
+
+@dataclass(eq=True)
+class ListType(Type):
+    elt_ty : Type
+    def __str__(self):
+        return 'list[' + str(self.elt_ty) + ']'
     
 @dataclass
 class FunRef(expr):
