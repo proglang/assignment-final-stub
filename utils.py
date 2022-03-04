@@ -629,7 +629,7 @@ compare_files = lambda file1, file2: cmp(file1, file2, shallow=False)
 # Given the `ast` output of a pass and a test program (root) name,
 # runs the interpreter on the program and compares the output to the
 # expected "golden" output.
-def test_pass(passname, interp, program_root, ast, compiler_name):
+def test_pass(passname, interp, program_root, ast, compiler_name) -> bool:
     input_file = program_root + ".in"
     output_file = program_root + ".out"
     stdin = sys.stdin
@@ -679,6 +679,23 @@ def compile_and_test(
     interp_C,
     program_filename,
 ):
+    def execute_pass(passname: str, program, interp= interp_P, type_check= None):
+        nonlocal total_passes, successful_passes
+        if hasattr(compiler, passname):
+            trace('\n#' + passname + '\n')
+            if type_check:
+                type_check(program)
+            program_out = getattr(compiler, passname)(program)
+            trace(program_out)
+            trace('')
+            total_passes += 1
+            successful_passes += test_pass(
+                passname, interp, program_root, program_out, compiler_name
+            )
+        else:
+            program_out = program
+        return program_out
+
     total_passes = 0
     successful_passes = 0
     from interp_x86.eval_x86 import interp_x86
@@ -691,64 +708,12 @@ def compile_and_test(
     trace(program)
     trace('')
 
-    passname = 'shrink'
-    if hasattr(compiler, passname):
-        trace('\n# ' + passname + '\n')
-        program = compiler.shrink(program)
-        trace(program)
-        trace('')
-        total_passes += 1
-        successful_passes += test_pass(
-            "shrink", interp_P, program_root, program, compiler_name
-        )
-
-    if hasattr(compiler, "reveal_functions"):
-        trace("\n**********\n reveal functions \n**********\n")
-        type_check_P(program)
-        program = compiler.reveal_functions(program)
-        trace(program)
-        total_passes += 1
-        successful_passes += test_pass(
-            "reveal functions", interp_P, program_root, program, compiler_name
-        )
-
-    if hasattr(compiler, "limit_functions"):
-        trace("\n**********\n limit functions \n**********\n")
-        type_check_P(program)
-        program = compiler.limit_functions(program)
-        trace(program)
-        total_passes += 1
-        successful_passes += test_pass(
-            "limit functions", interp_P, program_root, program, compiler_name
-        )
-
-    if hasattr(compiler, "expose_allocation"):
-        trace("\n**********\n expose allocation \n**********\n")
-        type_check_P(program)
-        program = compiler.expose_allocation(program)
-        trace(program)
-        total_passes += 1
-        successful_passes += test_pass(
-            "expose allocation", interp_P, program_root, program, compiler_name
-        )
-
-    trace("\n**********\n remove complex operands \n**********\n")
-    program = compiler.remove_complex_operands(program)
-    trace(program)
-    trace("")
-    total_passes += 1
-    successful_passes += test_pass(
-        "remove complex operands", interp_P, program_root, program, compiler_name
-    )
-
-    if hasattr(compiler, "explicate_control"):
-        trace("\n**********\n explicate control \n**********\n")
-        program = compiler.explicate_control(program)
-        trace(program)
-        total_passes += 1
-        successful_passes += test_pass(
-            "explicate control", interp_C, program_root, program, compiler_name
-        )
+    program = execute_pass('shrink', program)
+    program = execute_pass('reveal_functions', program, type_check= type_check_P)
+    program = execute_pass('limit_functions', program, type_check= type_check_P)
+    program = execute_pass('expose_allocation', program, type_check= type_check_P)
+    program = execute_pass('remove_complex_operands', program)
+    program = execute_pass('explicate_control', program, interp= interp_C)
 
     if type_check_C:
         trace("\n**********\n type check C \n**********\n")
