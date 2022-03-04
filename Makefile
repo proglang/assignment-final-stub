@@ -1,6 +1,6 @@
 PYTHON3_10= python3.10
 
-.PHONY: all clean distclean run-tests create-tests
+.PHONY: all clean distclean run-tests create-tests exam-tests
 
 all: runtime.o requirements.installed create-tests run-tests
 
@@ -20,6 +20,12 @@ create-tests:
 		bf=`basename $$f .py` ; \
 		sed -ne 's/#in=//w'$$bf.in -e 's/#golden=//w'$$bf.golden $$f ; \
 	done
+
+## checks minimum requirements
+## * all provided tests must be valid
+## * all tests passed by the compiler
+exam-tests:
+	$(PYTHON3_10) run-exam-tests.py
 
 clean:
 	rm tests/*/*.s
