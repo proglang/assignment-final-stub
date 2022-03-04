@@ -2,7 +2,7 @@ PYTHON3_10= python3.10
 
 .PHONY: all clean distclean run-tests create-tests exam-tests
 
-all: runtime.o requirements.installed create-tests run-tests
+all: runtime.o requirements.installed run-tests
 
 runtime.o: runtime.c runtime.h
 	gcc -c -g -std=c99 runtime.c
