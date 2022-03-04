@@ -2,6 +2,7 @@ import compiler
 import interp_Lfun
 import interp_Cfun
 import type_check_Lfun
+import type_check_Cfun
 from utils import run_tests, enable_tracing
 import sys
 
