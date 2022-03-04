@@ -670,6 +670,20 @@ def test_pass(passname, interp, program_root, ast, compiler_name) -> bool:
         return 0
 
 
+def validate_tests(lang: str, interp) -> bool:
+    '''check if all tests for `lang` work with `interp`'''
+    test_count = 0
+    success_count = 0
+    tests = get_all_tests_for(lang)
+    for test_filename in tests:
+        program_root = test_filename.split('.')[0]
+        with open(test_filename) as source:
+            program = parse(source.read())
+        test_count += 1
+        success_count += test_pass('--', interp, program_root, program, lang)
+    return test_count == success_count
+
+
 def compile_and_test(
     compiler,
     compiler_name,
@@ -897,16 +911,8 @@ def run_one_test(
 def run_tests(
     lang, compiler, compiler_name, type_check_P, interp_P, type_check_C, interp_C
 ):
-    # Collect all the test programs for this language.
-    homedir = os.getcwd()
-    directory = homedir + '/tests/' + lang + '/'
-    if not os.path.isdir(directory):
-        raise Exception('missing directory for test programs: ' \
-                        + directory)
-    for (dirpath, dirnames, filenames) in os.walk(directory):
-        tests = filter(is_python_extension, filenames)
-        tests = [dirpath + t for t in tests]
-        break
+    tests = get_all_tests_for(lang)
+
     # Compile and run each test program, comparing output to the golden file.
     successful_passes = 0
     total_passes = 0
@@ -933,3 +939,14 @@ def run_tests(
           + ' for compiler ' + compiler_name + ' on language ' + lang)
     print('passes: ' + repr(successful_passes) + '/' + repr(total_passes) \
           + ' for compiler ' + compiler_name + ' on language ' + lang)
+
+def get_all_tests_for(lang):
+    '''Collect all the test program file names for language `lang`.'''
+    homedir = os.getcwd()
+    directory = homedir + '/tests/' + lang + '/'
+    if not os.path.isdir(directory):
+        raise Exception('missing directory for test programs: ' \
+                        + directory)
+    (dirpath, dirnames, filenames) = next(os.walk(directory))
+    tests = [dirpath + t for t in filenames if is_python_extension(t)]
+    return tests
