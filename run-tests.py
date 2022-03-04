@@ -1,17 +1,7 @@
 import compiler
-import interp_Lvar
 import interp_Lfun
-import interp_Ltup
-import interp_Lfun
-import interp_Cif
-import interp_Ctup
 import interp_Cfun
 import type_check_Lfun
-import type_check_Ltup
-import type_check_Lfun
-import type_check_Cif
-import type_check_Ctup
-import type_check_Cfun
 from utils import run_tests, enable_tracing
 import sys
 

@@ -917,8 +917,8 @@ def compile(compiler, compiler_name, type_check_P, type_check_C,
 def run_one_test(
     test, lang, compiler, compiler_name, type_check_P, interp_P, type_check_C, interp_C
 ):
-    test_root = test.split(".")[0]
-    test_name = test_root.split("/")[-1]
+    # test_root = test.split(".")[0]
+    # test_name = test_root.split("/")[-1]
     return compile_and_test(
         compiler, compiler_name, type_check_P, interp_P, type_check_C, interp_C, test
     )
