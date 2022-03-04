@@ -15,7 +15,7 @@ class InterpCexam(InterpCfun):
       case BinOp(left, FloorDiv(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
           return l // r
-      case BinOp(left, Mult(), right):
+      case BinOp(left, Mod(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
           return l % r
       case _:
