@@ -1,6 +1,8 @@
-.PHONY: all clean distclean examtests
+PYTHON3_10= python3.10
 
-all: runtime.o requirements.installed
+.PHONY: all clean distclean run-tests create-tests
+
+all: runtime.o requirements.installed create-tests run-tests
 
 runtime.o: runtime.c runtime.h
 	gcc -c -g -std=c99 runtime.c
@@ -9,7 +11,10 @@ requirements.installed: requirements.txt
 	pip3 install -r requirements.txt
 	touch requirements.installed
 
-examtests:
+run-tests:
+	$(PYTHON3_10) run-tests.py
+
+create-tests:
 	cd tests/exam ; \
 	for f in *.py ; do \
 		bf=`basename $$f .py` ; \
