@@ -9,7 +9,7 @@ runtime.o: runtime.c runtime.h
 
 requirements.installed: requirements.txt
 	pip3 install -r requirements.txt
-	touch requirements.installed
+	echo > requirements.installed
 
 run-tests:
 	$(PYTHON3_10) run-tests.py
