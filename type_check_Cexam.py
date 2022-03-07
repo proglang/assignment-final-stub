@@ -53,9 +53,10 @@ class TypeCheckCexam(TypeCheckCfun):
         self.check_type_equal(index_ty, IntType(), index)
         match tup_t:
           case ListType(ty):
-            self.check_type_equal(ty, value_t, s)          
+            self.check_type_equal(ty, value_t, s)
           case _:
-            raise Exception('type_check_stmts: expected a list, not ' \
-                            + repr(tup_t))
+            super().type_check_stmt(s, env)
+            # raise Exception('type_check_stmts: expected a list, not ' \
+            #                + repr(tup_t))
       case _:
         return super().type_check_stmt(s, env)
