@@ -712,6 +712,8 @@ def compile_and_test(
     program = execute_pass('shrink', program)
     program = execute_pass('reveal_functions', program, type_check= type_check_P)
     program = execute_pass('limit_functions', program, type_check= type_check_P)
+    program = execute_pass('resolve', program, type_check= type_check_P)
+    program = execute_pass('check_bounds', program, type_check= type_check_P)
     program = execute_pass('expose_allocation', program, type_check= type_check_P)
     program = execute_pass('remove_complex_operands', program)
     program = execute_pass('explicate_control', program, interp= interp_C)
