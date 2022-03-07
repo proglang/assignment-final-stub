@@ -78,33 +78,16 @@ def repr_Constant(self):
     return 'Constant(' + repr(self.value) + ')'
 Constant.__repr__ = repr_Constant
 
-def str_Add(self):
-    return '+'
-Add.__str__ = str_Add
-def repr_Add(self):
-    return 'Add()'
-Add.__repr__ = repr_Add
-
-def str_Sub(self):
-    return '-'
-Sub.__str__ = str_Sub
-def repr_Sub(self):
-    return 'Sub()'
-Sub.__repr__ = repr_Sub
-
-def str_And(self):
-    return 'and'
-And.__str__ = str_And
-def repr_And(self):
-    return 'And()'
-And.__repr__ = repr_And
-
-def str_Or(self):
-    return 'or'
-Or.__str__ = str_Or
-def repr_Or(self):
-    return 'Or()'
-Or.__repr__ = repr_Or
+supported_binops = [(Add, '+', 'Add()')
+                ,(Sub, '-', 'Sub()')
+                ,(Mult, '*', 'Mult()')
+                ,(FloorDiv, '//', 'FloorDiv()')
+                ,(Mod, '%', 'Mod()')
+                ,(And, 'and', 'And()')
+                ,(Or, 'or', 'Or()')]
+for op_cls, op_name, op_ast_name in supported_binops:
+    op_cls.__str__  = lambda self: op_name
+    op_cls.__repr__ = lambda self: op_ast_name
 
 def str_BinOp(self):
     return '(' + str(self.left) + ' ' + str(self.op) + ' ' + str(self.right) + ')'
@@ -365,7 +348,6 @@ class AnnLambda(expr):
     params : list[tuple[str,Type]]
     returns : Type
     body : expr
-    __match_args__ = ("params", "returns", "body")
     def __str__(self):
         return 'lambda [' + \
             ', '.join([x + ':' + str(t) for (x,t) in self.params]) + '] -> ' \
@@ -376,7 +358,6 @@ class AnnLambda(expr):
 @dataclass
 class Uninitialized(expr):
     ty : Type
-    __match_args__ = ("ty",)
     def __str__(self):
         return 'uninit[' + str(self.ty) + ']'
     
@@ -417,11 +398,17 @@ class AllocateClosure(expr):
     length : int
     ty : Type
     arity : int
-    __match_args__ = ("length", "ty", "arity")
     def __str__(self):
         return 'alloc_clos(' + str(self.length) + ',' + str(self.ty) \
             + ','  + str(self.arity) + ')'
-    
+
+@dataclass
+class AllocateArray(expr):
+    length : expr
+    ty : Type
+    def __str__(self):
+        return 'alloc_array(' + str(self.length) + ',' + str(self.ty) + ')'
+
 @dataclass
 class Collect(stmt):
     size : int
