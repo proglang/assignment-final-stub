@@ -18,6 +18,8 @@ class TypeCheckLexam(TypeCheckLfun):
         match tup_t:
           case TupleType(_) | ListType(_):
             return IntType()
+          case Bottom():
+            return Bottom()
           case _:
             raise Exception('len expected tuple or list, not ' + repr(tup_t))
       case Call(Name('array_len'), [tup]):
@@ -31,7 +33,7 @@ class TypeCheckLexam(TypeCheckLfun):
       case Call(Name('array_load'), [tup, index]):
         tup_ty = self.type_check_exp(tup, env)
         tup.has_type = tup_ty
-        index_ty = self.type_check(index, env)
+        index_ty = self.type_check_exp(index, env)
         self.check_type_equal(index_ty, IntType(), index)
         match tup_ty:
           case ListType(t):
@@ -80,13 +82,14 @@ class TypeCheckLexam(TypeCheckLfun):
       return VoidType()
     match ss[0]:
       case Assign([Subscript(tup, index, Store())], value):
-        tup_t = self.type_check_exp(tup, env)
-        value_t = self.type_check_exp(value, env)
+        tup_ty = self.type_check_exp(tup, env)
+        value_ty = self.type_check_exp(value, env)
         index_ty = self.type_check_exp(index, env)
         self.check_type_equal(index_ty, IntType(), index)
-        match tup_t:
+        tup.has_type = tup_ty
+        match tup_ty:
           case ListType(ty):
-            self.check_type_equal(ty, value_t, ss[0])          
+            self.check_type_equal(ty, value_ty, ss[0])
           case _:
               # fall back to check for tuples
             return super().type_check_stmts(ss, env)

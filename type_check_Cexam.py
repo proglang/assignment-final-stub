@@ -33,6 +33,8 @@ class TypeCheckCexam(TypeCheckCfun):
                 raise Exception('subscript required constant integer index')
           case ListType(ty):
             return ty
+          case Bottom():
+            return Bottom()
           case _:
             raise Exception('subscript expected a tuple, not ' + repr(tup_ty))
       case BinOp(left, Mult() | FloorDiv() | Mod() , right):
@@ -56,7 +58,5 @@ class TypeCheckCexam(TypeCheckCfun):
             self.check_type_equal(ty, value_t, s)
           case _:
             super().type_check_stmt(s, env)
-            # raise Exception('type_check_stmts: expected a list, not ' \
-            #                + repr(tup_t))
       case _:
         return super().type_check_stmt(s, env)
