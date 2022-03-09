@@ -78,16 +78,19 @@ def repr_Constant(self):
     return 'Constant(' + repr(self.value) + ')'
 Constant.__repr__ = repr_Constant
 
-supported_binops = [(Add, '+', 'Add()')
+supported_ops = [(Add, '+', 'Add()')
                 ,(Sub, '-', 'Sub()')
                 ,(Mult, '*', 'Mult()')
                 ,(FloorDiv, '//', 'FloorDiv()')
                 ,(Mod, '%', 'Mod()')
                 ,(And, 'and', 'And()')
-                ,(Or, 'or', 'Or()')]
-for op_cls, op_name, op_ast_name in supported_binops:
-    op_cls.__str__  = lambda self: op_name
-    op_cls.__repr__ = lambda self: op_ast_name
+                ,(Or, 'or', 'Or()')
+                ,(USub, '-', 'USub()')
+                ,(Not, 'not', 'Not()')]
+
+for op_cls, op_name, op_ast_name in supported_ops:
+    op_cls.__str__  = (lambda op_name: lambda self: op_name) (op_name)
+    op_cls.__repr__ = (lambda op_ast_name: lambda self: op_ast_name) (op_ast_name)
 
 def str_BinOp(self):
     return '(' + str(self.left) + ' ' + str(self.op) + ' ' + str(self.right) + ')'
@@ -102,20 +105,6 @@ BoolOp.__str__ = str_BoolOp
 def repr_BoolOp(self):
     return repr(self.values[0]) + ' ' + repr(self.op) + ' ' + repr(self.values[1])
 BoolOp.__repr__ = repr_BoolOp
-
-def str_USub(self):
-    return '-'
-USub.__str__ = str_USub
-def repr_USub(self):
-    return 'USub()'
-USub.__repr__ = repr_USub
-
-def str_Not(self):
-    return 'not'
-Not.__str__ = str_Not
-def repr_Not(self):
-    return 'Not()'
-Not.__repr__ = repr_Not
 
 def str_UnaryOp(self):
     return str(self.op) + ' ' + str(self.operand)
