@@ -16,11 +16,11 @@ class InterpCexam(InterpCfun):
       case BinOp(left, FloorDiv(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
           aq = abs(l) // abs(r)
-          return aq * math.copysign(aq, l * r)
+          return aq if l * r >= 0 else -aq
       case BinOp(left, Mod(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
           ar = abs(l) % abs(r)
-          return ar * math.copysign(l)
+          return ar if l >=0 else -ar
       case Call(Name('array_len'), [tup]):
         t = self.interp_exp(tup, env)
         return len(t)
