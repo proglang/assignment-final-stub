@@ -1,4 +1,5 @@
 from ast import *
+import math
 from interp_Cfun import InterpCfun
 from utils import *
 from interp_Lfun import Function
@@ -14,10 +15,25 @@ class InterpCexam(InterpCfun):
           return l * r
       case BinOp(left, FloorDiv(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
-          return l // r
+          aq = abs(l) // abs(r)
+          return aq * math.copysign(aq, l * r)
       case BinOp(left, Mod(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
-          return l % r
+          ar = abs(l) % abs(r)
+          return ar * math.copysign(l)
+      case Call(Name('array_len'), [tup]):
+        t = self.interp_exp(tup, env)
+        return len(t)
+      case Call(Name('array_load'), [tup, index]):
+        t = self.interp_exp(tup, env)
+        i = self.interp_exp(index, env)
+        return t[i]
+      case Call(Name('array_store'), [tup, index, value]):
+        t = self.interp_exp(tup, env)
+        i = self.interp_exp(index, env)
+        v = self.interp_exp(value, env)
+        t[i] = v
+        return None
       case _:
         return super().interp_exp(e, env)
 
