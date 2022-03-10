@@ -2,7 +2,7 @@ PYTHON3_10= python3.10
 
 .PHONY: all clean distclean run-tests create-tests exam-tests
 
-all: runtime.o mul-div-mod.s requirements.installed run-tests
+all: runtime.o mul-div-mod.s mul-div-mod requirements.installed run-tests
 
 runtime.o: runtime.c runtime.h
 	gcc -c -g -std=c99 runtime.c
@@ -16,6 +16,9 @@ run-tests:
 
 mul-div-mod.s: mul-div-mod.c
 	gcc -S mul-div-mod.c
+
+mul-div-mod: mul-div-mod.c
+	gcc -o mul-div-mod mul-div-mod.c
 
 create-tests:
 	cd tests/exam ; \
