@@ -567,6 +567,13 @@ class Compiler:
                            [create_block(els, basic_blocks)],
                            [create_block(thn, basic_blocks)])]
 
+    def not_primitive(self, e) -> bool:
+        match e:
+            case Name(x):
+                return x not in ['input_int', 'print', 'len']
+            case _:
+                return True
+
     def explicate_tail(self, e, basic_blocks) -> list[stmt]:
         match e:
             case Begin(stmts, result):
@@ -581,7 +588,7 @@ class Compiler:
 #            case Let(var, rhs, body):
 #                new_body = self.explicate_tail(body, basic_blocks)
 #                return self.explicate_assign(rhs, var, new_body, basic_blocks)
-            case Call(var, args):
+            case Call(var, args) if self.not_primitive(var):
                 return [TailCall(var, args)]
             case _:
                 tmp_var = Name(generate_name('expl'))
