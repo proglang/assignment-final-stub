@@ -3,6 +3,21 @@ from type_check_Cfun import TypeCheckCfun
 from utils import *
 
 class TypeCheckCexam(TypeCheckCfun):
+
+  def check_type_equal(self, t1, t2, e):
+    match t1:
+      case ListType(ty1):
+        match t2:
+          case ListType(ty2):
+            self.check_type_equal(ty1, ty2, e)
+          case Bottom():
+            pass
+          case _:
+            raise Exception('error: ' + repr(t1) + ' != ' + repr(t2) \
+                      + ' in ' + repr(e))
+      case _:
+        super().check_type_equal(t1, t2, e)
+
   def type_check_exp(self, e, env):
     match e:
       case List(es, Load()):
@@ -18,6 +33,8 @@ class TypeCheckCexam(TypeCheckCfun):
         match tup_t:
           case TupleType(_) | ListType(_):
             return IntType()
+          case Bottom():
+            return Bottom()
           case _:
             raise Exception('len expected a tuple, not ' + repr(tup_t))
       case Subscript(tup, index, Load()):
@@ -57,6 +74,6 @@ class TypeCheckCexam(TypeCheckCfun):
           case ListType(ty):
             self.check_type_equal(ty, value_t, s)
           case _:
-            super().type_check_stmt(s, env)
+            return super().type_check_stmt(s, env)
       case _:
         return super().type_check_stmt(s, env)
