@@ -43,6 +43,8 @@ class InterpLexam(InterpLfun):
       case Assign([Subscript(lst, index)], value):
         lst = self.interp_exp(lst, env)
         index = self.interp_exp(index, env)
+        if index < 0:
+            raise IndexError('less than zero')
         lst[index] = self.interp_exp(value, env)
         return self.interp_stmts(ss[1:], env)
       case _:

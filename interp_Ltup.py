@@ -19,6 +19,8 @@ class InterpLtup(InterpLwhile):
       case Subscript(tup, index, Load()):
         t = self.interp_exp(tup, env)
         n = self.interp_exp(index, env)
+        if n < 0:
+          raise IndexError('less than zero')
         return t[n]
       case Call(Name('len'), [tup]):
         t = self.interp_exp(tup, env)
