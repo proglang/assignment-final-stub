@@ -43,6 +43,12 @@ class InterpLfun(InterpLtup):
     match ss[0]:
       case Return(value):
         return self.interp_exp(value, env)
+      case While(test, body, []):
+        while self.interp_exp(test, env):
+            r = self.interp_stmts(body, env)
+            if r is not None:
+              return r
+        return self.interp_stmts(ss[1:], env)
       case FunctionDef(name, params, bod, dl, returns, comment):
         if isinstance(params, ast.arguments):
             ps = [p.arg for p in params.args]
