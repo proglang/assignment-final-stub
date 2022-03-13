@@ -63,9 +63,12 @@ class TypeCheckLif(TypeCheckLvar):
         body_t = self.type_check_stmts(body, env)
         orelse_t = self.type_check_stmts(orelse, env)
         self.check_type_equal(body_t, orelse_t, ss[0])
+        cond_t = body_t if isinstance(orelse_t, Bottom) else orelse_t
         if len(ss) > 1:
-          return self.type_check_stmts(ss[1:], env)
+          ret_t = self.type_check_stmts(ss[1:], env)
+          self.check_type_equal(cond_t, ret_t, ss[0])
+          return ret_t if isinstance(cond_t, Bottom) else cond_t
         else: # this 'if' statement is in tail position
-          return body_t
+          return cond_t
       case _:
         return super().type_check_stmts(ss, env)
