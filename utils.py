@@ -403,6 +403,12 @@ class Collect(stmt):
     size : int
     def __str__(self):
         return indent_stmt() + 'collect(' + str(self.size) + ')\n'
+
+@dataclass
+class CollectArray(stmt):
+    size : expr
+    def __str__(self):
+        return indent_stmt() + 'collect_array(' + str(self.size) + ')\n'
     
 @dataclass
 class Begin(expr):
