@@ -57,7 +57,7 @@ class TypeCheckLtup(TypeCheckLwhile):
 
   def type_check_stmts(self, ss, env):
     if len(ss) == 0:
-      return
+      return VoidType()
     match ss[0]:
       case Collect(size):
         return self.type_check_stmts(ss[1:], env)

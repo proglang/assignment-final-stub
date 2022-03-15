@@ -55,19 +55,28 @@ class TypeCheckLif(TypeCheckLvar):
 
   def type_check_stmts(self, ss, env):
     if len(ss) == 0:
-      return Bottom()
+      return VoidType()
     match ss[0]:
       case If(test, body, orelse):
         test_t = self.type_check_exp(test, env)
         self.check_type_equal(BoolType(), test_t, test)
         body_t = self.type_check_stmts(body, env)
         orelse_t = self.type_check_stmts(orelse, env)
-        self.check_type_equal(body_t, orelse_t, ss[0])
-        cond_t = body_t if isinstance(orelse_t, Bottom) else orelse_t
+        if isinstance(body_t, VoidType):
+          cond_t = orelse_t
+        elif isinstance(orelse_t, VoidType):
+          cond_t = body_t
+        else:
+          self.check_type_equal(body_t, orelse_t, ss[0])
+          cond_t = body_t
         if len(ss) > 1:
           ret_t = self.type_check_stmts(ss[1:], env)
+          if isinstance(cond_t, VoidType):
+            return ret_t
+          if isinstance(ret_t, VoidType):
+            return cond_t
           self.check_type_equal(cond_t, ret_t, ss[0])
-          return ret_t if isinstance(cond_t, Bottom) else cond_t
+          return cond_t
         else: # this 'if' statement is in tail position
           return cond_t
       case _:
