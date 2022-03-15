@@ -55,7 +55,7 @@ class TypeCheckLif(TypeCheckLvar):
 
   def type_check_stmts(self, ss, env):
     if len(ss) == 0:
-      return
+      return Bottom()
     match ss[0]:
       case If(test, body, orelse):
         test_t = self.type_check_exp(test, env)
