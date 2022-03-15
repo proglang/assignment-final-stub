@@ -476,7 +476,7 @@ class Compiler:
             # L_tup: unassigned allocations are ignored (catch-all)
             # Begin
             case Begin(body, result):
-                result = cont
+                result = self.explicate_effect(result, cont, basic_blocks)
                 for s in reversed(body):
                     result = self.explicate_stmt(s, result, basic_blocks)
                 return result
