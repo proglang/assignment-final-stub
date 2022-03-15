@@ -206,6 +206,13 @@ def repr_Tuple(self):
     return 'Tuple(' + repr(self.elts) + ')'
 Tuple.__repr__ = repr_Tuple
 
+def str_List(self):
+    return '[' + ', '.join(str(e) for e in self.elts)  + ',]'
+List.__str__ = str_List
+def repr_List(self):
+    return 'List[' + repr(self.elts) + ']'
+List.__repr__ = repr_List
+
 def str_Subscript(self):
     return str(self.value) + '[' + str(self.slice) + ']'
 Subscript.__str__ = str_Subscript
