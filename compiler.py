@@ -588,7 +588,7 @@ class Compiler:
 #            case Let(var, rhs, body):
 #                new_body = self.explicate_tail(body, basic_blocks)
 #                return self.explicate_assign(rhs, var, new_body, basic_blocks)
-            case Call(var, args) if not self.is_primitive(var):
+            case Call(var, args) if not self.is_primitive(var) and isinstance(var, FunRef):
                 return [TailCall(var, args)]
             case _:
                 tmp_var = Name(generate_name('expl'))
@@ -962,7 +962,7 @@ class Compiler:
             case Instr("movq", [arg1, arg2]) if arg1 == arg2:
                     return []
             case Instr("leaq", [arg1, Deref(reg, offset)]):
-                return [Instr("movq", [arg1, Reg("rax")]),
+                return [Instr("leaq", [arg1, Reg("rax")]),
                         Instr("movq", [Reg("rax"), Deref(reg, offset)])]
             case TailJump(l, i) if l != Reg("rax"):
                 return [Instr("movq", [l, Reg("rax")]),
