@@ -348,13 +348,15 @@ class Compiler:
                     return (Name(fresh_tmp), [(Name(fresh_tmp), e)])
                 return (e, [])
             case Begin(body, exp):
+                atm, tmps = self.rco_exp(exp, False)
                 new_body = []
                 for s in body:
                     new_body += self.rco_stmt(s)
                 if need_atomic:
                     fresh_tmp = generate_name('atom')
-                    return (Name(fresh_tmp), [(Name(fresh_tmp), Begin(new_body, exp))])
-                return (Begin(new_body, exp), [])
+                    # The previous code did not handle complex exp.
+                    return (Name(fresh_tmp), [(Name(fresh_tmp), Begin(new_body + make_assigns(tmps), atm))])
+                return (Begin(new_body + make_assigns(tmps), atm), [])
             case Call(Name('len'), [exp]):
                 atm1, tmps1 = self.rco_exp(exp, True)
                 if need_atomic:
@@ -850,7 +852,17 @@ class Compiler:
             match key:
                 case Variable(var):
                     match p.var_types[var]:
-                        case TupleType(ts):
+                        # This case has been forgot (and it would be weird to redo everything in compiler_Lexam
+                        # just for that)
+                        case ListType(ts) :
+                            if val in rootstack_color_to_location:
+                                location = rootstack_color_to_location[val]
+                                output[key] = location
+                            else:
+                                offset_root_stack -= 8
+                                rootstack_color_to_location[key] = Deref("r15", offset_root_stack)
+                                output[key] = rootstack_color_to_location[key]
+                        case TupleType(ts) :
                             if val in rootstack_color_to_location:
                                 location = rootstack_color_to_location[val]
                                 output[key] = location
@@ -962,7 +974,9 @@ class Compiler:
             case Instr("movq", [arg1, arg2]) if arg1 == arg2:
                     return []
             case Instr("leaq", [arg1, Deref(reg, offset)]):
-                return [Instr("movq", [arg1, Reg("rax")]),
+                # Horrible mistake to replace leaq with movq here especially with the randomness of 
+                # register allocations!
+                return [Instr("leaq", [arg1, Reg("rax")]),
                         Instr("movq", [Reg("rax"), Deref(reg, offset)])]
             case TailJump(l, i) if l != Reg("rax"):
                 return [Instr("movq", [l, Reg("rax")]),
@@ -1014,6 +1028,9 @@ class Compiler:
                                     tailepilogue.insert(0, Instr("popq", [reg]))
                                 if stack_space_mod16 > 0:
                                     tailepilogue.insert(0, Instr("addq", [Immediate(stack_space_mod16), Reg("rsp")]))
+                                # This has been forgot previously.
+                                if df.root_stack_space > 0:
+                                    tailepilogue.insert(0, Instr("subq", [Immediate(df.root_stack_space), Reg("r15")]))
                                 new_ss += tailepilogue
                             case _:
                                 new_ss.append(s)
@@ -1037,6 +1054,9 @@ class Compiler:
                     epilogue.insert(0, Instr("popq", [reg]))
                 if stack_space_mod16 > 0:
                     epilogue.insert(0, Instr("addq", [Immediate(stack_space_mod16), Reg("rsp")]))
+                # This has been forgot previously... (Gives great segmentation faults)
+                if df.root_stack_space > 0:
+                    epilogue.insert(0, Instr("subq", [Immediate(df.root_stack_space), Reg("r15")]))
                 fbody[label_name(name + "conclusion")] = epilogue
                 return fbody
 
