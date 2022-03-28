@@ -703,7 +703,25 @@ void print_vector(int64_t* vector_ptr)
 {
   int64_t tag = vector_ptr[0];
   if (is_vecof(tag)) {
-    exit(EXIT_FAILURE); // this could need some love
+    unsigned char len = get_vecof_length(tag);
+    int64_t* scan_ptr = vector_ptr;
+    int64_t* next_ptr = vector_ptr + len + 1;
+
+    printf("%ld=#[", (int64_t)vector_ptr);
+    scan_ptr += 1;
+    int64_t isPointerBit = get_vecof_ptr_bitfield(tag);
+    while (scan_ptr != next_ptr) {
+      if (isPointerBit == 1 && is_ptr((int64_t*)*scan_ptr)) {
+        print_vector(to_ptr((int64_t*)*scan_ptr));
+      } else {
+        printf("%ld", (int64_t)*scan_ptr);
+      }
+      scan_ptr += 1;
+      if (scan_ptr != next_ptr) {
+        printf(", ");
+      }
+    }
+    printf("]");
   } else {
     unsigned char len = get_vector_length(tag);
     int64_t* scan_ptr = vector_ptr;
