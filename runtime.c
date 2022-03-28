@@ -33,7 +33,7 @@ static const int TAG_VEC_PTR_BITFIELD_RSHIFT = 7;
 
 static const int TAG_VECOF_LENGTH_RSHIFT = 2;
 static const int TAG_VECOF_PTR_BITFIELD_RSHIFT = 1;
-static const int TAG_VECOF_RSHIFT = 63;
+static const int TAG_VECOF_RSHIFT = 62;
 
 // cheney implements cheney's copying collection algorithm
 // There is a stub and explaination below.
@@ -62,7 +62,7 @@ static inline int64_t get_vec_ptr_bitfield(int64_t tag){
 
 // Get the length field out of a vectorof's tag.
 static inline int get_vecof_length(int64_t tag){
-  return ((tag << 1) >> 1) >> TAG_VECOF_LENGTH_RSHIFT;
+  return ((tag << 2) >> 2) >> TAG_VECOF_LENGTH_RSHIFT;
 }
 
 // Get the "is pointer bitfield" out of a vectorof's tag.
@@ -155,7 +155,21 @@ void validate_vector(int64_t** scan_addr) {
   int64_t* scan_ptr = *scan_addr;
   int64_t tag = *scan_ptr;
   if (is_vecof(tag)) {
-    exit(EXIT_FAILURE);
+    unsigned char len = get_vecof_length(tag);
+    int64_t isPtrBit = get_vecof_ptr_bitfield(tag);
+    int64_t* data = scan_ptr + 1;
+    for (unsigned char i = 0; i != len; i++){
+        if (isPtrBit) {
+            int64_t* ptr = (int64_t*) data[i];
+            if (is_ptr(ptr)) {
+                int64_t* real_ptr = to_ptr(ptr);
+                assert(real_ptr < fromspace_end);
+                assert(real_ptr >= fromspace_begin);
+            }
+        }
+    }
+    *scan_addr = scan_ptr + len + 1;
+    // exit(EXIT_FAILURE);
   } else {
     unsigned char len = get_vector_length(tag);
     int64_t isPtrBits = get_vec_ptr_bitfield(tag);
@@ -689,7 +703,7 @@ void print_vector(int64_t* vector_ptr)
 {
   int64_t tag = vector_ptr[0];
   if (is_vecof(tag)) {
-    exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE); // this could need some love
   } else {
     unsigned char len = get_vector_length(tag);
     int64_t* scan_ptr = vector_ptr;
