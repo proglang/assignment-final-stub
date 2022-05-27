@@ -155,10 +155,11 @@ void validate_vector(int64_t** scan_addr) {
   int64_t* scan_ptr = *scan_addr;
   int64_t tag = *scan_ptr;
   if (is_vecof(tag)) {
-    unsigned char len = get_vecof_length(tag);
+    uint64_t len = get_vecof_length(tag);
     int64_t isPtrBit = get_vecof_ptr_bitfield(tag);
     int64_t* data = scan_ptr + 1;
-    for (unsigned char i = 0; i != len; i++){
+    *scan_addr = scan_ptr + len + 1;
+    for (uint64_t i = 0; i != len; i++){
         if (isPtrBit) {
             int64_t* ptr = (int64_t*) data[i];
             if (is_ptr(ptr)) {
@@ -168,8 +169,6 @@ void validate_vector(int64_t** scan_addr) {
             }
         }
     }
-    *scan_addr = scan_ptr + len + 1;
-    // exit(EXIT_FAILURE);
   } else {
     unsigned char len = get_vector_length(tag);
     int64_t isPtrBits = get_vec_ptr_bitfield(tag);
@@ -692,7 +691,7 @@ void print_heap(int64_t** rootstack_ptr)
     if (is_ptr(*root_loc)) {
       print_vector(to_ptr(*root_loc));
     } else {
-      printf("%lld", (int64_t)*root_loc);
+      printf("%" PRId64, (int64_t)*root_loc);
     }
     printf("\n");
   }
@@ -703,11 +702,11 @@ void print_vector(int64_t* vector_ptr)
 {
   int64_t tag = vector_ptr[0];
   if (is_vecof(tag)) {
-    unsigned char len = get_vecof_length(tag);
+    uint64_t len = get_vecof_length(tag);
     int64_t* scan_ptr = vector_ptr;
     int64_t* next_ptr = vector_ptr + len + 1;
 
-    printf("%ld=#[", (int64_t)vector_ptr);
+    printf("%" PRId64 "=#[", (int64_t)vector_ptr);
     scan_ptr += 1;
     int64_t isPointerBit = get_vecof_ptr_bitfield(tag);
     while (scan_ptr != next_ptr) {
@@ -727,14 +726,14 @@ void print_vector(int64_t* vector_ptr)
     int64_t* scan_ptr = vector_ptr;
     int64_t* next_ptr = vector_ptr + len + 1;
 
-    printf("%lld=#(", (int64_t)vector_ptr);
+    printf("%" PRId64 "=#(", (int64_t)vector_ptr);
     scan_ptr += 1;
     int64_t isPointerBits = get_vec_ptr_bitfield(tag);
     while (scan_ptr != next_ptr) {
       if ((isPointerBits & 1) == 1 && is_ptr((int64_t*)*scan_ptr)) {
         print_vector(to_ptr((int64_t*)*scan_ptr));
       } else {
-        printf("%lld", (int64_t)*scan_ptr);
+        printf("%" PRId64, (int64_t)*scan_ptr);
       }
       isPointerBits = isPointerBits >> 1;
       scan_ptr += 1;
