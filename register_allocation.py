@@ -33,9 +33,9 @@ def get_arg_locations(arg1 : arg) -> set[location]:
 def get_read_write_locations(istr : Instr) -> tuple[set[location], set[location]]:
     match istr:
         case Instr(op, [arg1, arg2]):
-            if op == "addq" or op == "subq" or op == "xorq":
+            if op in ["addq", "subq", "xorq", "andq", "orq", "salq", "sarq"]:
                 return (get_arg_locations(arg1) | get_arg_locations(arg2), get_arg_locations(arg2))
-            elif op == "cmpq":
+            elif op in ["cmpq"]:
                 return (get_arg_locations(arg1) | get_arg_locations(arg2), set())
             else:
                 return (get_arg_locations(arg1), get_arg_locations(arg2))

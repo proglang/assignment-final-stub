@@ -980,7 +980,7 @@ class Compiler:
                         Instr("movq", [Reg("rax"), Deref(reg, offset)])]
             case TailJump(l, i) if l != Reg("rax"):
                 return [Instr("movq", [l, Reg("rax")]),
-                        TailJump(Reg("rax"), l)]
+                        TailJump(Reg("rax"), i)]
             case _:
                 return [i]
 
