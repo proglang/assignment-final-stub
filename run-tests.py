@@ -67,10 +67,7 @@ def main(lang, compiler, trace, recursion_limit, path):
             type_check_C=type_check_Cfun.TypeCheckCfun().type_check,
             interp_C=interp_Cfun.InterpCfun().interp,
         )
-        print(
-            "test file: "
-            + str(p)
-        )
+        print("test file: " + str(p))
         # Report the pass/fails
         print(
             "tests: "
