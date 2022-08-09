@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 import sys
-from sys import platform
 import ast
 from dataclasses import dataclass
 from typing import Callable
@@ -955,14 +954,28 @@ def bool2int(b):
 
 
 label_name: Callable[[str], str] = (
-    (lambda n: "_" + n) if platform == "darwin" else (lambda n: n)
+    (lambda n: "_" + n) if sys.platform == "darwin" else (lambda n: n)
 )
 
 # def label_name(n: str) -> str:
-#     if platform == "darwin":
+#     if sys.platform == "darwin":
 #         return '_' + n
 #     else:
 #         return n
+
+
+def ast_loc(obj: ast.AST):
+    return (
+        "beginning line: "
+        + repr(obj.lineno)
+        + " ending line: "
+        + repr(obj.end_lineno)
+        + " beginning column offset: "
+        + repr(obj.col_offset)
+        + " ending column offset: "
+        + repr(obj.end_col_offset)
+    )
+
 
 tracing = False
 
@@ -1327,6 +1340,7 @@ def run_tests(
     successful_tests = 0
     total_tests = 0
     for test in tests:
+        print("test file: " + str(test))
         (succ_passes, tot_passes, succ_test) = run_one_test(
             test,
             lang,
