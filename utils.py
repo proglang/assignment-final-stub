@@ -1,19 +1,39 @@
-from collections import UserString
 import os
 from pathlib import Path
 import sys
 import ast
 from dataclasses import dataclass
+from types import NotImplementedType
 from typing import Callable, Dict, List
 from filecmp import cmp
-from typing_extensions import Self
 
 ################################################################################
 # Labels
 ################################################################################
-class Label(str):
-    def __new__(cls: type[Self], seq: object) -> Self:
-        return str.__new__(cls, "_" + seq if sys.platform == "darwin" else seq)
+LABEL_PREPEND: str = "_" if sys.platform == "darwin" else ""
+
+
+@dataclass(frozen=True)
+class Label:
+    name: str
+
+    def __init__(self, _name: str) -> None:
+        object.__setattr__(self, "name", LABEL_PREPEND + _name)
+
+    def __add__(self, other) -> str | NotImplementedType:
+        if isinstance(other, str):
+            return self.name + other
+        else:
+            return NotImplemented
+
+    def __radd__(self, other) -> str | NotImplementedType:
+        if isinstance(other, str):
+            return other + self.name
+        else:
+            return NotImplemented
+
+    def __str__(self) -> str:
+        return self.name
 
 
 # label_name: Callable[[str], str] = (

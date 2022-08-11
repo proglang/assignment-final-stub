@@ -13,14 +13,16 @@ class X86Program:
         if type(self.body) == dict:
             for (l, ss) in self.body.items():
                 if l == Label("main"):
-                    result += "\t.globl " + Label("main") + "\n"
+                    result += "\t.globl " + Label("main").name + "\n"
                 result += "\t.align 16\n"
                 result += l + ":\n"
                 indent()
                 result += "".join([str(s) for s in ss]) + "\n"
                 dedent()
         else:
-            result += "\t.globl " + Label("main") + "\n" + Label("main") + ":\n"
+            result += (
+                "\t.globl " + Label("main").name + "\n" + Label("main").name + ":\n"
+            )
             indent()
             result += "".join([str(s) for s in self.body])
             dedent()
