@@ -1,0 +1,4 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+	"postCreateCommand": "if [ -r requirements.txt ]; then (pip3 install --user -r requirements.txt); fi ; if [ -r runtime.c ]; then (gcc -c -g -std=c99 runtime.c); fi"
+}
