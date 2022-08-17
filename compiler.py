@@ -314,12 +314,12 @@ class Compiler:
                     If(
                         Compare(
                             BinOp(
-                                GlobalValue(Label("free_ptr").name),
+                                GlobalValue(Label("free_ptr")),
                                 Add(),
                                 Constant(bytesreq),
                             ),
                             [Lt()],
-                            [GlobalValue(Label("fromspace_end").name)],
+                            [GlobalValue(Label("fromspace_end"))],
                         ),
                         [Expr(Constant(0))],
                         [Collect(bytesreq)],

@@ -794,7 +794,7 @@ class Begin(ast.expr):
 
 @dataclass
 class GlobalValue(ast.expr):
-    name: str
+    name: Label
 
     def __str__(self):
         return str(self.name)
