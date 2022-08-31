@@ -1001,16 +1001,17 @@ def bool2int(b):
 
 
 def ast_loc(obj: ast.AST):
-    return (
-        "beginning line: "
-        + repr(obj.lineno)
-        + " ending line: "
-        + repr(obj.end_lineno)
-        + " beginning column offset: "
-        + repr(obj.col_offset)
-        + " ending column offset: "
-        + repr(obj.end_col_offset)
-    )
+    return ""
+    # return (
+    #     "beginning line: "
+    #     + repr(obj.lineno)
+    #     + " ending line: "
+    #     + repr(obj.end_lineno)
+    #     + " beginning column offset: "
+    #     + repr(obj.col_offset)
+    #     + " ending column offset: "
+    #     + repr(obj.end_col_offset)
+    # )
 
 
 tracing = False
@@ -1414,7 +1415,8 @@ def run_tests(
         + lang
     )
 
+import glob
 
 def get_all_tests_for(path: Path):
     """Collect all the test program file names for language `lang`."""
-    return list(path.glob("*.py"))
+    return list(glob.glob(path + "/*.py"))

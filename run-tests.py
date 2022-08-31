@@ -9,6 +9,12 @@ import interp_Cfun
 import interp_Lfun
 import type_check_Cfun
 import type_check_Lfun
+
+import interp_Cexam
+import interp_Lexam
+import type_check_Lexam
+import type_check_Cexam
+
 from utils import enable_tracing, run_one_test, run_tests
 
 _compiler = compiler.Compiler()
@@ -51,10 +57,10 @@ def main(lang, compiler, trace, recursion_limit, path):
             lang=lang,
             compiler=_compiler,
             compiler_name=compiler,
-            type_check_P=type_check_Lfun.TypeCheckLfun().type_check,
-            interp_P=interp_Lfun.InterpLfun().interp,
-            type_check_C=type_check_Cfun.TypeCheckCfun().type_check,
-            interp_C=interp_Cfun.InterpCfun().interp,
+            type_check_P= type_check_Lexam.TypeCheckLexam().type_check,
+            interp_P=interp_Lexam.InterpLexam().interp,
+            type_check_C=type_check_Cexam.TypeCheckCexam().type_check,
+            interp_C=interp_Cexam.InterpCexam().interp
         )
     else:
         succ_passes, tot_passes, succ_test = run_one_test(
@@ -62,10 +68,10 @@ def main(lang, compiler, trace, recursion_limit, path):
             lang=lang,
             compiler=_compiler,
             compiler_name=compiler,
-            type_check_P=type_check_Lfun.TypeCheckLfun().type_check,
-            interp_P=interp_Lfun.InterpLfun().interp,
-            type_check_C=type_check_Cfun.TypeCheckCfun().type_check,
-            interp_C=interp_Cfun.InterpCfun().interp,
+            type_check_P= type_check_Lexam.TypeCheckLexam().type_check,
+            interp_P=interp_Lexam.InterpLexam().interp,
+            type_check_C=type_check_Cexam.TypeCheckCexam().type_check,
+            interp_C=interp_Cexam.InterpCexam().interp
         )
         print("test file: " + str(p))
         # Report the pass/fails

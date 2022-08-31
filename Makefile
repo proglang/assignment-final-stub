@@ -25,10 +25,13 @@ mul-div-mod: mul-div-mod.c
 	gcc -o mul-div-mod mul-div-mod.c
 
 create-tests:
-	cd tests/exam ; \
-	for f in *.py ; do \
-		bf=`basename $$f .py` ; \
-		sed -ne 's/#in=//w'$$bf.in -e 's/#golden=//w'$$bf.golden $$f ; \
+	for d in exam exam-2 ; do \
+		cd tests/$$d ; \
+		for f in *.py ; do \
+			bf=`basename $$f .py` ; \
+			sed -ne 's/#in=//w'$$bf.in -e 's/#golden=//w'$$bf.golden $$f ; \
+		done ; \
+		cd ../.. ; \
 	done
 
 ## checks minimum requirements

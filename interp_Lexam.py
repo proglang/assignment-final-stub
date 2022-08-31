@@ -7,7 +7,7 @@ class InterpLexam(InterpLfun):
 
   def interp_exp(self, e, env):
     match e:
-      case List(es, Load()):
+      case ast.List(es, ast.Load()):
         return [self.interp_exp(e, env) for e in es]
       case BinOp(left, Mult(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
@@ -20,6 +20,21 @@ class InterpLexam(InterpLfun):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
           ar = abs(l) % abs(r)
           return ar if l >=0 else -ar
+      case BinOp(left, LShift(), right):
+          l = self.interp_exp(left, env); r = self.interp_exp(right,env)
+          return l << r
+      case BinOp(left, RShift(), right):
+          l = self.interp_exp(left, env); r = self.interp_exp(right,env)
+          return l >> r
+      case BinOp(left, BitOr(), right):
+          l = self.interp_exp(left, env); r = self.interp_exp(right, env)
+          return l | r
+      case BinOp(left, BitXor(), right):
+          l = self.interp_exp(left, env); r = self.interp_exp(right,env)
+          return l ^ r
+      case BinOp(left, BitAnd(), right):
+          l = self.interp_exp(left, env); r = self.interp_exp(right,env)
+          return l & r
       case Call(Name('array_len'), [tup]):
         t = self.interp_exp(tup, env)
         return len(t)
