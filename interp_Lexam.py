@@ -8,7 +8,12 @@ class InterpLexam(InterpLfun):
   def interp_exp(self, e, env):
     match e:
       case ast.List(es, ast.Load()):
-        return [self.interp_exp(e, env) for e in es]
+          return [self.interp_exp(e, env) for e in es]
+      case Subscript(tup, Slice(lower, upper), Load()):
+          t = self.interp_exp(tup, env)
+          l = self.interp_exp(lower, env)
+          u = self.interp_exp(upper, env)
+          return t[l:u]
       case BinOp(left, Mult(), right):
           l = self.interp_exp(left, env); r = self.interp_exp(right, env)
           return l * r
