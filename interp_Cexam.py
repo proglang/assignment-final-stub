@@ -22,6 +22,26 @@ class InterpCexam(InterpCfun):
                 r = self.interp_exp(right, env)
                 ar = abs(l) % abs(r)
                 return ar if l >= 0 else -ar
+            case ast.BinOp(left, ast.LShift(), right):
+                l = self.interp_exp(left, env)
+                r = self.interp_exp(right,env)
+                return l << r
+            case ast.BinOp(left, ast.RShift(), right):
+                l = self.interp_exp(left, env)
+                r = self.interp_exp(right,env)
+                return l >> r
+            case ast.BinOp(left, ast.BitOr(), right):
+                l = self.interp_exp(left, env)
+                r = self.interp_exp(right, env)
+                return l | r
+            case ast.BinOp(left, ast.BitXor(), right):
+                l = self.interp_exp(left, env)
+                r = self.interp_exp(right,env)
+                return l ^ r
+            case ast.BinOp(left, ast.BitAnd(), right):
+                l = self.interp_exp(left, env)
+                r = self.interp_exp(right,env)
+                return l & r
             case ast.Call(ast.Name("array_len"), [tup]):
                 t = self.interp_exp(tup, env)
                 return len(t)
