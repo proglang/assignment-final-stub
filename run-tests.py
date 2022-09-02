@@ -40,6 +40,9 @@ processors : dict[str, dict[str, Callable]] = {
 }
 
 @click.command()
+@click.option("-v", "--verbose",
+     is_flag=True, show_default=True, default=False, help="Print progress messages"
+)
 @click.option("-l", "--lang", help="Lang to use", required=True, type=click.Choice(["fun", "exam"]))
 @click.option("-c", "--compiler", help="Compiler to use", required=True, type=click.Choice(["fun", "exam"]))
 @click.option(
@@ -58,17 +61,19 @@ processors : dict[str, dict[str, Callable]] = {
     type=int,
 )
 @click.argument("paths", nargs=-1, type=click.Path(exists=True))
-def main(lang, compiler, trace, recursion_limit, paths):
+def main(verbose, lang, compiler, trace, recursion_limit, paths):
     """
-    Runs test(s) found in PATH. If PATH is a directory,
+    Runs tests found in PATH. If PATH is a directory,
     script will try to find and run all the tests in it.
-    If it's a file, script will try to run only that single
+    If it is a single file, script will try to run only that single
     test.
     """
     sys.setrecursionlimit(recursion_limit)
     if trace:
         enable_tracing()
     for path in paths:
+        if verbose:
+            print("processing path " + path)
         p = Path(path)
         if Path.is_dir(p):
             run_tests(
