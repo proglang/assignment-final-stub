@@ -7,6 +7,12 @@ from types import NotImplementedType
 from typing import Callable, Dict, List
 from filecmp import cmp
 
+MAX_INT_64 = 9223372036854775807
+MIN_INT_64 = -9223372036854775808
+
+MAX_INT_32 = 4294967295
+MIN_INT_32 = -4294967296
+
 ################################################################################
 # Labels
 ################################################################################
