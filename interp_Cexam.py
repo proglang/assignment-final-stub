@@ -6,6 +6,9 @@ from utils import *
 class InterpCexam(InterpCfun):
     def interp_exp(self, e, env):
         match e:
+            case AllocateArray(length, typ):  # FIXED
+                length = self.interp_exp(length, env)
+                return [None] * length
             case ast.List(es, ast.Load()):
                 return [self.interp_exp(e, env) for e in es]
             case ast.BinOp(left, ast.Mult(), right):

@@ -7,6 +7,9 @@ class InterpLexam(InterpLfun):
 
   def interp_exp(self, e, env):
     match e:
+      case AllocateArray(length, typ):  # FIXED
+          length = self.interp_exp(length, env)
+          return [None] * length
       case ast.List(es, ast.Load()):
           return [self.interp_exp(e, env) for e in es]
       case Subscript(tup, Slice(lower, upper), Load()):
