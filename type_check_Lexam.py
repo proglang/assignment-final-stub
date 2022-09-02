@@ -2,10 +2,23 @@ import ast
 from type_check_Lfun import TypeCheckLfun
 import utils
 
+class TypeCheckLexam(TypeCheckLfun):
+
+  def parse_type_annot(self, annot):   # FIXED
+      match annot:
+        case utils.ListType(t):
+          return utils.ListType(self.parse_type_annot(t))
+        case ast.Subscript(ast.Name('list'), t):
+            ty = self.parse_type_annot(t)
+            return utils.ListType(ty)
+        case _:
+            return super().parse_type_annot(annot)
 
 class TypeCheckLexam(TypeCheckLfun):
     def type_check_exp(self, e, env):
         match e:
+            case utils.AllocateArray(length, typ):  # FIXED
+                return typ
             case ast.List(es, ast.Load()):
                 ts = [self.type_check_exp(e, env) for e in es]
                 elt_ty = ts[0]
