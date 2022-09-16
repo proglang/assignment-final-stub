@@ -1,4 +1,5 @@
 import ast
+from types import NoneType
 import utils
 import copy
 
@@ -39,6 +40,8 @@ class TypeCheckCif:
                 return utils.BoolType()
             case ast.Constant(value) if isinstance(value, int):
                 return utils.IntType()
+            case ast.Constant(value) if isinstance(value, NoneType):
+                return utils.VoidType()
             case _:
                 raise Exception(
                     "error in type_check_atm, unexpected "
