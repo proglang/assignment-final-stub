@@ -21,7 +21,7 @@ class TypeCheckLexam(TypeCheckLfun):
                 return typ
             case ast.List(es, ast.Load()):
                 ts = [self.type_check_exp(e, env) for e in es]
-                elt_ty = ts[0]
+                elt_ty = ts[0] if len(ts) > 0 else utils.Bottom
                 for (ty, elt) in zip(ts, es):
                     self.check_type_equal(elt_ty, ty, elt)
                 e.has_type = utils.ListType(elt_ty)  # type: ignore
