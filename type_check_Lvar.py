@@ -48,34 +48,45 @@ class TypeCheckLvar:
                     + utils.ast_loc(e)
                 )
 
-    def type_check_stmts(self, ss, env):
-        if len(ss) == 0:
-            return
-        match ss[0]:
-            case ast.Assign([ast.Name(id)], value):
-                t = self.type_check_exp(value, env)
-                if id in env:
-                    self.check_type_equal(env[id], t, value)
-                else:
-                    env[id] = t
-                return self.type_check_stmts(ss[1:], env)
-            case ast.Expr(ast.Call(ast.Name("print"), [arg])):
-                t = self.type_check_exp(arg, env)
-                self.check_type_equal(t, utils.IntType(), arg)
-                return self.type_check_stmts(ss[1:], env)
-            case ast.Expr(value):
-                self.type_check_exp(value, env)
-                return self.type_check_stmts(ss[1:], env)
-            case _:
-                raise Exception(
-                    "type_check_stmts: unexpected "
-                    + repr(ss[0])
-                    + (
-                        ("\nAST info 1: " + utils.ast_loc(ss[0]))
-                        if isinstance(ss[0], ast.AST)
-                        else ""
+    def type_check_stmts(self, ss, env, idx=0):
+        def _logic(obj, env):
+            match obj:
+                case ast.Assign([ast.Name(id)], value):
+                    t = self.type_check_exp(value, env)
+                    if id in env:
+                        self.check_type_equal(env[id], t, value)
+                    else:
+                        env[id] = t
+                    return True
+                case ast.Expr(ast.Call(ast.Name("print"), [arg])):
+                    t = self.type_check_exp(arg, env)
+                    self.check_type_equal(t, utils.IntType(), arg)
+                    return True
+                case ast.Expr(value):
+                    self.type_check_exp(value, env)
+                    return True
+                case _:
+                    raise Exception(
+                        "type_check_stmts: unexpected "
+                        + repr(obj)
+                        + (
+                            ("\nAST info 1: " + utils.ast_loc(obj))
+                            if isinstance(obj, ast.AST)
+                            else ""
+                        )
                     )
-                )
+
+        if self.__class__ == __class__:
+            for i in range(len(ss)):
+                obj = ss[i]
+                ret = _logic(obj, env)
+                if not isinstance(ret, (bool, NoneType)):
+                    return ret
+        else:
+            obj = ss[idx]
+            ret = _logic(obj, env)
+            if not isinstance(ret, (bool, NoneType)):
+                return ret
 
     def type_check(self, p):
         match p:

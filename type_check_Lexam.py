@@ -1,18 +1,20 @@
 import ast
+from types import NoneType
 from type_check_Lfun import TypeCheckLfun
 import utils
 
-class TypeCheckLexam(TypeCheckLfun):
 
-  def parse_type_annot(self, annot):   # FIXED
-      match annot:
-        case utils.ListType(t):
-          return utils.ListType(self.parse_type_annot(t))
-        case ast.Subscript(ast.Name('list'), t):
-            ty = self.parse_type_annot(t)
-            return utils.ListType(ty)
-        case _:
-            return super().parse_type_annot(annot)
+class TypeCheckLexam(TypeCheckLfun):
+    def parse_type_annot(self, annot):  # FIXED
+        match annot:
+            case utils.ListType(t):
+                return utils.ListType(self.parse_type_annot(t))
+            case ast.Subscript(ast.Name("list"), t):
+                ty = self.parse_type_annot(t)
+                return utils.ListType(ty)
+            case _:
+                return super().parse_type_annot(annot)
+
 
 class TypeCheckLexam(TypeCheckLfun):
     def type_check_exp(self, e, env):
@@ -37,8 +39,12 @@ class TypeCheckLexam(TypeCheckLfun):
                     case (utils.ListType(_), _, _):
                         e.has_type = tup_t
                         return tup_t
-                    case (utils.TupleType(tys), ast.Constant(lower_v), ast.Constant(upper_v)):
-                        ret_t = tys[lower_v: upper_v]
+                    case (
+                        utils.TupleType(tys),
+                        ast.Constant(lower_v),
+                        ast.Constant(upper_v),
+                    ):
+                        ret_t = tys[lower_v:upper_v]
                         e.has_type = utils.TupleType(ret_t)
                         return e.has_type
                     case _:
@@ -174,24 +180,46 @@ class TypeCheckLexam(TypeCheckLfun):
             case _:
                 return super().type_check_exp(e, env)
 
-    def type_check_stmts(self, ss, env):
-        if len(ss) == 0:
-            return utils.Bottom()
-        match ss[0]:
-            case ast.Assign([ast.Subscript(tup, index, ast.Store())], value):
-                tup_ty = self.type_check_exp(tup, env)
-                value_ty = self.type_check_exp(value, env)
-                index_ty = self.type_check_exp(index, env)
-                self.check_type_equal(index_ty, utils.IntType(), index)
-                tup.has_type = tup_ty  # type: ignore
-                match tup_ty:
-                    case utils.ListType(ty):
-                        self.check_type_equal(ty, value_ty, ss[0])
-                    case _:
-                        # fall back to check for tuples
-                        return super().type_check_stmts(ss, env)
-                        #    raise Exception('type_check_stmts: expected a list, not ' \
-                        #                + repr(tup_t))
-                return self.type_check_stmts(ss[1:], env)
-            case _:
-                return super().type_check_stmts(ss, env)
+    def type_check_stmts(self, ss, env, idx=0):
+        def _logic(obj, env):
+            match obj:
+                case ast.Assign([ast.Subscript(tup, index, ast.Store())], value):
+                    tup_ty = self.type_check_exp(tup, env)
+                    value_ty = self.type_check_exp(value, env)
+                    index_ty = self.type_check_exp(index, env)
+                    self.check_type_equal(index_ty, utils.IntType(), index)
+                    tup.has_type = tup_ty  # type: ignore
+                    match tup_ty:
+                        case utils.ListType(ty):
+                            self.check_type_equal(ty, value_ty, obj)
+                        case _:
+                            # fall back to check for tuples
+                            # return super().type_check_stmts(ss, env)
+                            return False
+                            #    raise Exception('type_check_stmts: expected a list, not ' \
+                            #                + repr(tup_t))
+                    return True
+                case _:
+                    return False
+
+        if self.__class__ == __class__:
+            for i in range(len(ss)):
+                obj = ss[i]
+                ret = _logic(obj, env)
+                if not isinstance(ret, (bool, NoneType)):
+                    return ret
+                if ret == False:
+                    ret_s = super().type_check_stmts(ss, env, i)
+                    if not isinstance(ret_s, (bool, NoneType)):
+                        return ret_s
+            else:
+                return utils.Bottom()
+        else:
+            obj = ss[idx]
+            ret = _logic(obj, env)
+            if not isinstance(ret, (bool, NoneType)):
+                return ret
+            if ret == False:
+                ret_s = super().type_check_stmts(ss, env, idx)
+                if not isinstance(ret_s, (bool, NoneType)):
+                    return ret_s
