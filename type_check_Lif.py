@@ -60,17 +60,17 @@ class TypeCheckLif(TypeCheckLvar):
         # Couldn't modify here because of the entanglement
         if len(ss) == 0:
             return Bottom()
-        match ss[0]:
+        match ss[idx]:
             case If(test, body, orelse):
                 test_t = self.type_check_exp(test, env)
                 self.check_type_equal(BoolType(), test_t, test)
                 body_t = self.type_check_stmts(body, env)  # TODO
                 orelse_t = self.type_check_stmts(orelse, env)  # TODO
-                self.check_type_equal(body_t, orelse_t, ss[0])
+                self.check_type_equal(body_t, orelse_t, ss[idx])
                 cond_t = body_t if isinstance(orelse_t, Bottom) else orelse_t
-                if len(ss) > 1:
-                    ret_t = self.type_check_stmts(ss[1:], env)  # TODO
-                    self.check_type_equal(cond_t, ret_t, ss[0])
+                if len(ss[idx:]) > 1:
+                    ret_t = self.type_check_stmts(ss[idx + 1 :], env)  # TODO
+                    self.check_type_equal(cond_t, ret_t, ss[idx])
                     return ret_t if isinstance(cond_t, Bottom) else cond_t
                 else:  # this 'if' statement is in tail position
                     return cond_t
