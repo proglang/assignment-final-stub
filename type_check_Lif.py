@@ -75,4 +75,4 @@ class TypeCheckLif(TypeCheckLvar):
                 else:  # this 'if' statement is in tail position
                     return cond_t
             case _:
-                return super().type_check_stmts(ss, env)
+                return super().type_check_stmts(ss, env, idx)
