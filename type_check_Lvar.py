@@ -1,4 +1,5 @@
 import ast
+from types import NoneType
 import utils
 
 
@@ -35,6 +36,8 @@ class TypeCheckLvar:
                 return env[id]
             case ast.Constant(value) if isinstance(value, int):
                 return utils.IntType()
+            case ast.Constant(value) if isinstance(value, NoneType):
+                return utils.VoidType()
             case ast.Call(ast.Name("input_int"), []):
                 return utils.IntType()
             case _:

@@ -1,5 +1,6 @@
 from ast import *
 from cProfile import label
+from types import NoneType
 from typing import Optional
 from register_allocation import build_interference, color_graph
 from register_allocation import (
@@ -640,6 +641,10 @@ class Compiler:
                 )
             #            case Let(var, rhs, body):
             #                return self.explicate_assign(rhs, var, self.explicate_assign(body, lhs, cont, basic_blocks), basic_blocks)
+            case Constant(t) if isinstance(t, NoneType):
+                # Workaround for the cases where `rhs` is `Constant(None)`,
+                # compiler treats it as an immediate and the limit check fails
+                return [Assign([lhs], Constant(0))] + cont
             case _:
                 return [Assign([lhs], rhs)] + cont
 

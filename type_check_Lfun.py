@@ -46,7 +46,7 @@ class TypeCheckLfun(TypeCheckLtup):
                         + utils.ast_loc(annot)
                     )
             case utils.TupleType(ts):
-                return utils.TupleType([self.parse_type_annot(t) for t in ts])
+                return utils.TupleType([self.parse_type_annot(t) for t in ts])  # type: ignore
             case utils.FunctionType(ps, rt):
                 return utils.FunctionType(
                     [self.parse_type_annot(t) for t in ps], self.parse_type_annot(rt)
@@ -58,19 +58,15 @@ class TypeCheckLfun(TypeCheckLtup):
                 )
             case ast.Subscript(ast.Name("tuple"), ast.Tuple(ts)):
                 return utils.TupleType([self.parse_type_annot(t) for t in ts])
-            case utils.IntType():
-                return annot
-            case utils.BoolType():
-                return annot
-            case utils.VoidType():
+            case utils.IntType() | utils.BoolType() | utils.VoidType():
                 return annot
             case t if t == int:
                 return utils.IntType()
             case t if t == bool:
                 return utils.BoolType()
-            case t if t == type(None):
+            case ast.Constant(None) | None:
                 return utils.VoidType()
-            case ast.Constant(None):
+            case t if t == type(None):
                 return utils.VoidType()
             case _:
                 raise Exception(
@@ -145,6 +141,10 @@ class TypeCheckLfun(TypeCheckLtup):
                 for s in body:
                     match s:
                         case ast.FunctionDef(name, params, bod, dl, returns, comment):
+                            if not (
+                                returns or isinstance(bod[len(bod) - 1], ast.Return)
+                            ):
+                                bod.append(ast.Return(ast.Constant(None)))
                             if isinstance(params, ast.arguments):
                                 params_t = [
                                     self.parse_type_annot(p.annotation)
@@ -153,7 +153,7 @@ class TypeCheckLfun(TypeCheckLtup):
                             else:
                                 params_t = [t for (x, t) in params]  # type: ignore
                             env[name] = utils.FunctionType(
-                                params_t, self.parse_type_annot(returns)
+                                params_t, self.parse_type_annot(returns)  # type: ignore
                             )
                 self.type_check_stmts(body, env)
             case _:
