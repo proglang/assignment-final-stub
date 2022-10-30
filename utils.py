@@ -1355,9 +1355,41 @@ def run_one_test(
 ):
     # test_root = test.split(".")[0]
     # test_name = test_root.split("/")[-1]
-    return compile_and_test(
-        test, compiler, compiler_name, type_check_P, interp_P, type_check_C, interp_C
-    )
+    if str(test).split("/")[1] == "fail":
+        try:
+            succ_passes, tot_passes, succ_test = compile_and_test(
+                test,
+                compiler,
+                compiler_name,
+                type_check_P,
+                interp_P,
+                type_check_C,
+                interp_C,
+            )
+        except Exception:
+            return (0, 0, 1)
+        else:
+            if succ_test:
+                print(
+                    "compiler "
+                    + compiler_name
+                    + ", executable failed"
+                    + " on test "
+                    + str(test)
+                )
+                return (succ_passes, tot_passes, 0)
+            else:
+                return (succ_passes, tot_passes, 1)
+    else:
+        return compile_and_test(
+            test,
+            compiler,
+            compiler_name,
+            type_check_P,
+            interp_P,
+            type_check_C,
+            interp_C,
+        )
 
 
 # Given the name of a language, a compiler, the compiler's name, a
@@ -1421,7 +1453,9 @@ def run_tests(
         + lang
     )
 
+
 import glob
+
 
 def get_all_tests_for(path: Path):
     """Collect all the test program file names for language `lang`."""
