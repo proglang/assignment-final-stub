@@ -1,4 +1,5 @@
 import ast
+from types import NoneType
 from type_check_Lwhile import TypeCheckLwhile
 import utils
 
@@ -79,44 +80,63 @@ class TypeCheckLtup(TypeCheckLwhile):
             case _:
                 return super().type_check_exp(e, env)
 
-    def type_check_stmts(self, ss, env):
-        if len(ss) == 0:
-            return
-        match ss[0]:
-            case utils.Collect(size):
-                return self.type_check_stmts(ss[1:], env)
-            case ast.Assign(
-                [ast.Subscript(tup, ast.Constant(index), ast.Store())], value
-            ):
-                tup_t = self.type_check_exp(tup, env)
-                value_t = self.type_check_exp(value, env)
-                match tup_t:
-                    case utils.TupleType(ts):
-                        self.check_type_equal(ts[index], value_t, ss[0])
-                    case utils.Bottom():
-                        pass
-                    case _:
-                        raise Exception(
-                            "type_check_stmts: expected a tuple, not "
-                            + repr(tup_t)
-                            + (
-                                ("\nAST info 1: " + utils.ast_loc(ss[0]))
-                                if isinstance(ss[0], ast.AST)
-                                else "\n"
+    def type_check_stmts(self, ss, env, idx=0):
+        def _logic(obj, env):
+            match obj:
+                case utils.Collect(size):
+                    return True
+                case ast.Assign(
+                    [ast.Subscript(tup, ast.Constant(index), ast.Store())], value
+                ):
+                    tup_t = self.type_check_exp(tup, env)
+                    value_t = self.type_check_exp(value, env)
+                    match tup_t:
+                        case utils.TupleType(ts):
+                            self.check_type_equal(ts[index], value_t, obj)
+                            return True
+                        case utils.Bottom():
+                            return True
+                        case _:
+                            raise Exception(
+                                "type_check_stmts: expected a tuple, not "
+                                + repr(tup_t)
+                                + (
+                                    ("\nAST info 1: " + utils.ast_loc(obj))
+                                    if isinstance(obj, ast.AST)
+                                    else "\n"
+                                )
+                                + "AST info 2: "
+                                + utils.ast_loc(tup)
+                                + (
+                                    (" & AST info 3: " + utils.ast_loc(index))
+                                    if isinstance(index, ast.AST)
+                                    else ""
+                                )
+                                + " & AST info 4: "
+                                + utils.ast_loc(value)
                             )
-                            + "AST info 2: "
-                            + utils.ast_loc(tup)
-                            + (
-                                (" & AST info 3: " + utils.ast_loc(index))
-                                if isinstance(index, ast.AST)
-                                else ""
-                            )
-                            + " & AST info 4: "
-                            + utils.ast_loc(value)
-                        )
-                return self.type_check_stmts(ss[1:], env)
-            case _:
-                return super().type_check_stmts(ss, env)
+                case _:
+                    return False
+
+        if self.__class__ == __class__:
+            for i in range(len(ss)):
+                obj = ss[i]
+                ret = _logic(obj, env)
+                if not isinstance(ret, (bool, NoneType)):
+                    return ret
+                if ret == False:
+                    ret_s = super().type_check_stmts(ss, env, i)
+                    if not isinstance(ret_s, (bool, NoneType)):
+                        return ret_s
+        else:
+            obj = ss[idx]
+            ret = _logic(obj, env)
+            if not isinstance(ret, (bool, NoneType)):
+                return ret
+            if ret == False:
+                ret_s = super().type_check_stmts(ss, env, idx)
+                if not isinstance(ret_s, (bool, NoneType)):
+                    return ret_s
 
 
 if __name__ == "__main__":

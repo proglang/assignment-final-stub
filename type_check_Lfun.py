@@ -1,4 +1,5 @@
 import ast
+from types import NoneType
 from type_check_Ltup import TypeCheckLtup
 import utils
 
@@ -107,32 +108,53 @@ class TypeCheckLfun(TypeCheckLtup):
             case _:
                 return super().type_check_exp(e, env)
 
-    def type_check_stmts(self, ss, env):
-        if len(ss) == 0:
-            return utils.Bottom()
-        match ss[0]:
-            case ast.FunctionDef(name, params, body, dl, returns, comment):
-                new_env = {x: t for (x, t) in env.items()}
-                if isinstance(params, ast.arguments):
-                    new_params = [
-                        (p.arg, self.parse_type_annot(p.annotation))
-                        for p in params.args
-                    ]
-                    ss[0].args = new_params
-                    new_returns = self.parse_type_annot(returns)
-                    ss[0].returns = new_returns
-                else:
-                    new_params = params
-                    new_returns = returns
-                for (x, t) in new_params:
-                    new_env[x] = t
-                rt = self.type_check_stmts(body, new_env)
-                self.check_type_equal(new_returns, rt, ss[0])
-                return self.type_check_stmts(ss[1:], env)
-            case ast.Return(value):
-                return self.type_check_exp(value, env)
-            case _:
-                return super().type_check_stmts(ss, env)
+    def type_check_stmts(self, ss, env, idx=0):
+        def _logic(obj, env):
+            match obj:
+                case ast.FunctionDef(name, params, body, dl, returns, comment):
+                    new_env = {x: t for (x, t) in env.items()}
+                    if isinstance(params, ast.arguments):
+                        new_params = [
+                            (p.arg, self.parse_type_annot(p.annotation))
+                            for p in params.args
+                        ]
+                        obj.args = new_params
+                        new_returns = self.parse_type_annot(returns)
+                        obj.returns = new_returns
+                    else:
+                        new_params = params
+                        new_returns = returns
+                    for (x, t) in new_params:
+                        new_env[x] = t
+                    rt = self.type_check_stmts(body, new_env)
+                    self.check_type_equal(new_returns, rt, obj)
+                    return True
+                case ast.Return(value):
+                    return self.type_check_exp(value, env)
+                case _:
+                    return False
+
+        if self.__class__ == __class__:
+            for i in range(len(ss)):
+                obj = ss[i]
+                ret = _logic(obj, env)
+                if not isinstance(ret, (bool, NoneType)):
+                    return ret
+                if ret == False:
+                    ret_s = super().type_check_stmts(ss, env, i)
+                    if not isinstance(ret_s, (bool, NoneType)):
+                        return ret_s
+            else:
+                return utils.Bottom()
+        else:
+            obj = ss[idx]
+            ret = _logic(obj, env)
+            if not isinstance(ret, (bool, NoneType)):
+                return ret
+            if ret == False:
+                ret_s = super().type_check_stmts(ss, env, idx)
+                if not isinstance(ret_s, (bool, NoneType)):
+                    return ret_s
 
     def type_check(self, p):
         match p:
